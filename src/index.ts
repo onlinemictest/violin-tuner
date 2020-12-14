@@ -128,15 +128,15 @@ Aubio().then(({ Pitch }) => {
     return alert('Browser not supported')
   }
 
-  const wheel = document.getElementById('pitch-wheel-svg') as HTMLImageElement | null;
-  const freqSpan = document.getElementById('pitch-freq')?.querySelector('.freq') as HTMLElement | null;
-  const noteSpan = document.getElementById('pitch-freq')?.querySelector('.note') as HTMLElement | null;
-  const octaveSpan = document.getElementById('pitch-freq')?.querySelector('.octave') as HTMLElement | null;
+  // const wheel = document.getElementById('pitch-wheel-svg') as HTMLImageElement | null;
+  // const freqSpan = document.getElementById('pitch-freq')?.querySelector('.freq') as HTMLElement | null;
+  // const noteSpan = document.getElementById('pitch-freq')?.querySelector('.note') as HTMLElement | null;
+  // const octaveSpan = document.getElementById('pitch-freq')?.querySelector('.octave') as HTMLElement | null;
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
-  const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
-  const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
-  if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
+  // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
+  // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
+  // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
 
   let audioContext: AudioContext;
   let analyser: AnalyserNode;
@@ -144,19 +144,20 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  pauseEl.addEventListener('click', () => {
+  pauseEl?.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
     // stream.getTracks().forEach(track => track.stop());
-    startEl.style.display = 'block';
-    pauseEl.style.display = 'none';
-    freqTextEl.style.display = 'none';
-    if (block2) block2.style.display = 'block';
-    toggleClass(startEl, 'blob-animation');
+
+    // startEl.style.display = 'block';
+    // pauseEl.style.display = 'none';
+    // freqTextEl.style.display = 'none';
+    // if (block2) block2.style.display = 'block';
+    // toggleClass(startEl, 'blob-animation');
   })
 
-  startEl.addEventListener('click', () => {
+  startEl?.addEventListener('click', () => {
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
@@ -169,10 +170,10 @@ Aubio().then(({ Pitch }) => {
       scriptProcessor.connect(audioContext.destination);
 
       startEl.style.display = 'none';
-      pauseEl.style.display = 'block';
-      freqTextEl.style.display = 'block';
-      if (block2) block2.style.display = 'none';
-      toggleClass(pauseEl, 'shrink-animation');
+      if (pauseEl) pauseEl.style.display = 'block';
+      // freqTextEl.style.display = 'block';
+      // if (block2) block2.style.display = 'none';
+      // toggleClass(pauseEl, 'shrink-animation');
 
       let prevDeg = 0;
 
@@ -184,16 +185,16 @@ Aubio().then(({ Pitch }) => {
         const deg = note.index * unit + (note.cents / 100) * unit;
 
         if (note.name) {
-          const degDiff = Math.trunc(Math.abs(prevDeg - deg));
-          prevDeg = deg;
-          const transformTime = (degDiff + 25) * 15;
+          // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
+          // prevDeg = deg;
+          // const transformTime = (degDiff + 25) * 15;
 
-          freqSpan.innerText = note.frequency.toFixed(1);
-          noteSpan.innerText = note.name;
-          octaveSpan.innerText = note.octave.toString();
+          // freqSpan.innerText = note.frequency.toFixed(1);
+          // noteSpan.innerText = note.name;
+          // octaveSpan.innerText = note.octave.toString();
 
-          wheel.style.transition = `transform ${transformTime}ms ease`;
-          wheel.style.transform = `rotate(-${deg}deg)`;
+          // wheel.style.transition = `transform ${transformTime}ms ease`;
+          // wheel.style.transform = `rotate(-${deg}deg)`;
         }
       });
     });
