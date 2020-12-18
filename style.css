@@ -1,4 +1,64 @@
-#pitch-wheel {
+#guitar-tuner {
+  margin: 30px 0;
+}
+
+#guitar-tuner-img {
+  width: 50%;
+}
+
+.match-circle {
+  border-radius: 100%;
+  width: 20vw;
+  height: 20vw;
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  margin-top: -10vw;
+  margin-left: -10vw;
+}
+
+#match-circle-l {
+  background: rgba(0, 0, 0, 0.05);
+  transform: translateX(-15vw);
+}
+
+#match-circle-r {
+  background: rgba(0, 0, 0, 0.05);
+  /* transform: translateX(9.5vw); */
+}
+
+#audio-start {
+  background: #fff;
+  width: 135px;
+  height: 135px;
+  top: 50%;
+  margin-top: -67.5px;
+  left: -67.5px;
+  z-index: 10;
+}
+
+.audio-button {
+  position: absolute;
+  margin: 0 auto;
+  padding: 0;
+  background: none;
+  border: none;
+  cursor: pointer;
+  outline: none;
+  transition: transform 1s ease;
+  border-radius: 100%;
+  /* margin-bottom: 20px; */
+}
+
+#tune-up-box {
+  position: relative;
+  height: 100%;
+  border: .2vw solid rgb(67,111,142);
+  border-radius: 25px;
+  overflow: hidden;
+}
+
+/* #pitch-wheel {
   font-family: 'Open Sans Condensed';
   font-weight: bold;
   width: 100%;
@@ -173,4 +233,4 @@
 @keyframes blob-animation {
   0% { transform : scale(0.33) }
   100% { transform: scale(1) }
-}
+} */

@@ -114,6 +114,10 @@ function getCents(frequency: number, note: number) {
   return Math.floor((1200 * Math.log(frequency / getStandardFrequency(note))) / Math.log(2));
 }
 
+const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
+const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
+const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
+
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
   initGetUserMedia();
@@ -132,8 +136,10 @@ Aubio().then(({ Pitch }) => {
   // const freqSpan = document.getElementById('pitch-freq')?.querySelector('.freq') as HTMLElement | null;
   // const noteSpan = document.getElementById('pitch-freq')?.querySelector('.note') as HTMLElement | null;
   // const octaveSpan = document.getElementById('pitch-freq')?.querySelector('.octave') as HTMLElement | null;
-  const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
-  const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
+  const startEl = document.getElementById('audio-start') as HTMLButtonElement;
+  const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
+  const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
+  const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
   // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
   // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
   // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
@@ -144,7 +150,7 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  pauseEl?.addEventListener('click', () => {
+  pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
@@ -157,7 +163,7 @@ Aubio().then(({ Pitch }) => {
     // toggleClass(startEl, 'blob-animation');
   })
 
-  startEl?.addEventListener('click', () => {
+  startEl.addEventListener('click', () => {
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
@@ -170,7 +176,7 @@ Aubio().then(({ Pitch }) => {
       scriptProcessor.connect(audioContext.destination);
 
       startEl.style.display = 'none';
-      if (pauseEl) pauseEl.style.display = 'block';
+      pauseEl.style.display = 'block';
       // freqTextEl.style.display = 'block';
       // if (block2) block2.style.display = 'none';
       // toggleClass(pauseEl, 'shrink-animation');
@@ -184,10 +190,15 @@ Aubio().then(({ Pitch }) => {
         const unit = (360 / WHEEL_NOTES);
         const deg = note.index * unit + (note.cents / 100) * unit;
 
-        if (note.name) {
+
+        if (['D', 'A', 'E', 'G', 'B', 'E'].includes(note.name)) {
           // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
           // prevDeg = deg;
           // const transformTime = (degDiff + 25) * 15;
+          const centsApprox = round(note.cents, 5);
+
+          // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+          matchCircleL.style.transform = `translateX(${-centsApprox}%)`;
 
           // freqSpan.innerText = note.frequency.toFixed(1);
           // noteSpan.innerText = note.name;
