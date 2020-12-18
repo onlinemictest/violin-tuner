@@ -23,7 +23,7 @@ const middleA = 440;
 
 const SEMI_TONE = 69;
 const WHEEL_NOTES = 24;
-const BUFFER_SIZE = 4096;
+const BUFFER_SIZE = 2 ** 12;
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
 const toggleClass = (element: HTMLElement, ...cls: string[]) => {
@@ -150,17 +150,23 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
+  const tuneUpText = matchCircleR.innerText;
+
   pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
     // stream.getTracks().forEach(track => track.stop());
 
-    // startEl.style.display = 'block';
-    // pauseEl.style.display = 'none';
+    startEl.style.display = 'block';
+    pauseEl.style.display = 'none';
+    matchCircleL.style.transform = `translateX(-30vw)`;
+    matchCircleR.innerText = tuneUpText;
+    matchCircleR.classList.add('with-text');
+    matchCircleR.style.color = '';
     // freqTextEl.style.display = 'none';
     // if (block2) block2.style.display = 'block';
-    // toggleClass(startEl, 'blob-animation');
+    toggleClass(startEl, 'blob-animation');
   })
 
   startEl.addEventListener('click', () => {
@@ -177,28 +183,48 @@ Aubio().then(({ Pitch }) => {
 
       startEl.style.display = 'none';
       pauseEl.style.display = 'block';
+      matchCircleR.innerText = '';
+      matchCircleR.classList.remove('with-text');
       // freqTextEl.style.display = 'block';
       // if (block2) block2.style.display = 'none';
-      // toggleClass(pauseEl, 'shrink-animation');
+      toggleClass(pauseEl, 'shrink-animation');
 
-      let prevDeg = 0;
+      matchCircleL.style.visibility = 'visible';
+
+      // console.time('foo');
+      let prevCents = -50; 
 
       scriptProcessor.addEventListener('audioprocess', event => {
+        // console.timeEnd('foo');
+        // console.time('foo');
+
         const frequency = pitchDetector.do(event.inputBuffer.getChannelData(0));
         const note = getNote(frequency);
 
-        const unit = (360 / WHEEL_NOTES);
-        const deg = note.index * unit + (note.cents / 100) * unit;
-
+        // const unit = (360 / WHEEL_NOTES);
+        // const deg = note.index * unit + (note.cents / 100) * unit;
+        // console.log(note.name)
 
         if (['D', 'A', 'E', 'G', 'B', 'E'].includes(note.name)) {
           // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
           // prevDeg = deg;
           // const transformTime = (degDiff + 25) * 15;
+          if (Number.isNaN(note.cents)) return;
+
           const centsApprox = round(note.cents, 5);
 
+          const transitionTime = Math.abs(prevCents - centsApprox) * 10;
+          // console.log(transitionTime)
+
           // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+          matchCircleL.style.transition = `transform ${transitionTime}ms ease`;
           matchCircleL.style.transform = `translateX(${-centsApprox}%)`;
+
+          matchCircleR.innerText = note.name;
+          if (centsApprox === 0) matchCircleR.style.color = '#fff';
+          else matchCircleR.style.color = '#fff8';
+
+          prevCents = centsApprox;
 
           // freqSpan.innerText = note.frequency.toFixed(1);
           // noteSpan.innerText = note.name;
