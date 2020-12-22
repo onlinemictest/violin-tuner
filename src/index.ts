@@ -26,6 +26,8 @@ const WHEEL_NOTES = 24;
 const BUFFER_SIZE = 2 ** 12;
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 
+const GUITAR_NOTES = ['E_4', 'B_3', 'G_3', 'D_3', 'A_2', 'E_2'];
+
 const toggleClass = (element: HTMLElement, ...cls: string[]) => {
   element.classList.remove(...cls);
 
@@ -174,6 +176,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
+    pitchDetector.setSilence(-70);
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       // stream = s;
@@ -192,39 +195,54 @@ Aubio().then(({ Pitch }) => {
       matchCircleL.style.visibility = 'visible';
 
       // console.time('foo');
-      let prevCents = -50; 
+      let prevCents = -50;
+      let prevNotes: string[] = new Array(3);
 
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('foo');
         // console.time('foo');
 
-        const frequency = pitchDetector.do(event.inputBuffer.getChannelData(0));
+        const buffer = event.inputBuffer.getChannelData(0)
+        const volume = volumeAudioProcess(buffer);
+        const frequency = pitchDetector.do(buffer);
         const note = getNote(frequency);
 
         // const unit = (360 / WHEEL_NOTES);
         // const deg = note.index * unit + (note.cents / 100) * unit;
         // console.log(note.name)
 
-        if (['D', 'A', 'E', 'G', 'B', 'E'].includes(note.name)) {
-          // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
-          // prevDeg = deg;
-          // const transformTime = (degDiff + 25) * 15;
-          if (Number.isNaN(note.cents)) return;
+        if (!note.name) return;
 
-          const centsApprox = round(note.cents, 5);
+        const noteId = `${note.name}_${note.octave}`;
+        if (GUITAR_NOTES.includes(noteId)) {
+          if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
 
-          const transitionTime = Math.abs(prevCents - centsApprox) * 10;
-          // console.log(transitionTime)
+            console.log(note);
 
-          // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-          matchCircleL.style.transition = `transform ${transitionTime}ms ease`;
-          matchCircleL.style.transform = `translateX(${-centsApprox}%)`;
+            // if (prevNote == note.name)
+            // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
+            // prevDeg = deg;
+            // const transformTime = (degDiff + 25) * 15;
 
-          matchCircleR.innerText = note.name;
-          if (centsApprox === 0) matchCircleR.style.color = '#fff';
-          else matchCircleR.style.color = '#fff8';
+            const centsApprox = round(note.cents, 5);
+            console.log(centsApprox)
 
-          prevCents = centsApprox;
+            // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
+            // console.log(transitionTime)
+
+            // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+            matchCircleL.style.transition = `transform 200ms ease`;
+            matchCircleL.style.transform = `translateX(${-centsApprox}%)`;
+
+            matchCircleR.innerText = note.name;
+            if (centsApprox === 0) matchCircleR.style.color = '#fff';
+            else matchCircleR.style.color = '#fff8';
+
+            prevCents = centsApprox;
+          }
+
+          prevNotes.pop();
+          prevNotes.unshift(note.name);
 
           // freqSpan.innerText = note.frequency.toFixed(1);
           // noteSpan.innerText = note.name;
@@ -237,4 +255,29 @@ Aubio().then(({ Pitch }) => {
     });
   });
 });
+
+function volumeAudioProcess(buf: Float32Array) {
+  let bufLength = buf.length;
+  let sum = 0;
+  let x;
+
+  // Do a root-mean-square on the samples: sum up the squares...
+  for (let i = 0; i < bufLength; i++) {
+    x = buf[i];
+    // if (Math.abs(x) >= clipLevel) {
+    //   this.clipping = true;
+    //   lastClip = window.performance.now();
+    // }
+    sum += x * x;
+  }
+
+  // ... then take the square root of the sum.
+  let rms = Math.sqrt(sum / bufLength);
+
+  // Now smooth this out with the averaging factor applied
+  // to the previous sample - take the max here because we
+  // want "fast attack, slow release."
+  // this.volume = Math.max(rms, this.volume * this.averaging);
+  return rms;
+}
 
