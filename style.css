@@ -52,6 +52,7 @@
   width: 135px;
   height: 135px;
   top: 50%;
+  left: 1.5px;
   margin-top: -67.5px;
   left: -67.5px;
 }
@@ -61,10 +62,10 @@
   height: 45px;
   display: none;
   position: absolute;
-  bottom: 0;
-  top: 50%;
-  margin-top: -22.5px;
-  left: -22.5px;
+  left: 1.5px;
+  bottom: 1.5px;
+  margin-left: -22.5px;
+  margin-bottom: -11.25px;
 }
 
 .audio-button {
@@ -290,10 +291,10 @@
     box-shadow: 0 0 2px, inset 0 0 1px; }
 }
 @keyframes shrink-animation {
-  0% { transform : scale(3) }
-  100% { transform: scale(1) }
+  0% { transform : translateY(-10vw) scale(3) }
+  100% { transform: translateY(0) scale(1) }
 }
 @keyframes blob-animation {
-  0% { transform : scale(0.33) }
-  100% { transform: scale(1) }
+  0% { transform : translateY(10vw) scale(0.33) }
+  100% { transform: translateY(0) scale(1) }
 }
