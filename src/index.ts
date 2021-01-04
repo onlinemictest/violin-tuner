@@ -17,70 +17,13 @@
  */
 
 import { initGetUserMedia } from "./init-get-user-media";
+import { toggleClass } from "./dom-fns";
+import { getNote } from "./music-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
-type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
-
-const middleA = 440;
-
-const SEMI_TONE = 69;
 const BUFFER_SIZE = 2 ** 12;
-const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
 const GUITAR_NOTES = ['E_4', 'B_3', 'G_3', 'D_3', 'A_2', 'E_2'];
-
-const toggleClass = (element: HTMLElement, ...cls: string[]) => {
-  element.classList.remove(...cls);
-
-  // Force layout reflow
-  void element.offsetWidth;
-
-  element.classList.add(...cls);
-};
-
-interface Note {
-  value: number,
-  index: number,
-  name: NoteString
-  cents: number
-  octave: number,
-  frequency: number,
-}
-
-function getNote(frequency: number): Note {
-  const noteIndex = getNoteIndex(frequency);
-  return {
-    value: noteIndex % 12,
-    index: noteIndex,
-    name: NOTE_STRINGS[noteIndex % 12],
-    cents: getCents(frequency, noteIndex),
-    octave: Math.trunc(noteIndex / 12) - 1,
-    frequency: frequency,
-  };
-}
-
-/**
- * Get musical note from frequency
- */
-function getNoteIndex(frequency: number) {
-  const note = 12 * (Math.log(frequency / middleA) / Math.log(2))
-  return Math.round(note) + SEMI_TONE
-}
-
-/**
- * Get the musical note's standard frequency
- */
-function getStandardFrequency(note: number) {
-  return middleA * Math.pow(2, (note - SEMI_TONE) / 12)
-}
-
-/**
- * Get cents difference between given frequency and musical note's standard frequency
- */
-function getCents(frequency: number, note: number) {
-  return Math.floor((1200 * Math.log(frequency / getStandardFrequency(note))) / Math.log(2));
-}
 
 const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
 const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
@@ -179,8 +122,6 @@ Aubio().then(({ Pitch }) => {
 
         if (!note.name) return;
 
-        console.log()
-
         if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
           console.log(note);
 
@@ -191,7 +132,7 @@ Aubio().then(({ Pitch }) => {
 
           // const centsApprox = round(note.cents, 5);
           const centsApprox = note.cents;
-          console.log(centsApprox)
+          // console.log(centsApprox)
 
           // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
           // console.log(transitionTime)
