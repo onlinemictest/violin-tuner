@@ -105,7 +105,9 @@ Aubio().then(({ Pitch }) => {
 
       // console.time('foo');
       let prevCents = -50;
-      let prevNotes: string[] = ['', '', ''];
+      const prevNotes: string[] = ['', '', ''];
+      // ~2 seconds at 85ms per audioprocess event
+      const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(24).fill(50)]));
 
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('foo');
@@ -123,15 +125,20 @@ Aubio().then(({ Pitch }) => {
         if (!note.name) return;
 
         if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
-          console.log(note);
+          // console.log(note);
 
           // if (prevNote == note.name)
           // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
           // prevDeg = deg;
           // const transformTime = (degDiff + 25) * 15;
+          const noteName = `${note.name}_${note.octave}`;
 
-          // const centsApprox = round(note.cents, 5);
-          const centsApprox = note.cents;
+          const absCents100 = Math.abs(note.cents) * 2;
+          const sensitivity = Math.min(10, Math.round((1 / absCents100) * 100));
+          const centsUI = round(note.cents, sensitivity);
+          queue(hitBuffer.get(noteName), centsUI);
+          // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
+          // const centsApprox = note.cents;
           // console.log(centsApprox)
 
           // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
@@ -139,18 +146,23 @@ Aubio().then(({ Pitch }) => {
 
           // matchCircleR.style.transform = `translateX(${note.cents}%)`;
           matchCircleL.style.transition = `transform 200ms ease`;
-          matchCircleL.style.transform = `translateX(${centsApprox}%)`;
+          matchCircleL.style.transform = `translateX(${centsUI}%)`;
 
           matchCircleR.innerText = note.name;
           matchCircleR.classList.remove('with-text');
-          if (centsApprox === 0) matchCircleR.style.color = '#fff';
+
+          const centsBuffer = hitBuffer.get(noteName) ?? [];
+          const centsHits = centsBuffer.filter(x => x === 0);
+
+          if (centsHits.length > .5 * centsBuffer.length && centsUI === 0) matchCircleR.style.color = '#fff';
           else matchCircleR.style.color = '#fff8';
 
-          prevCents = centsApprox;
+          console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
+
+          prevCents = centsUI;
         }
 
-        prevNotes.pop();
-        prevNotes.unshift(note.name);
+        queue(prevNotes, note.name);
 
         // freqSpan.innerText = note.frequency.toFixed(1);
         // noteSpan.innerText = note.name;
@@ -162,6 +174,8 @@ Aubio().then(({ Pitch }) => {
     });
   });
 });
+
+const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
 
 function volumeAudioProcess(buf: Float32Array) {
   let bufLength = buf.length;
