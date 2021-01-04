@@ -31,7 +31,7 @@
   visibility: hidden;
   background: #e25d1b;
   /* background: #e25d1b7c; */
-  transform: translateX(-30vw);
+  transform: translateX(30vw);
 }
 
 #match-circle-r {
