@@ -29,6 +29,7 @@ const GUITAR_NOTES = ['E_4', 'B_3', 'G_3', 'D_3', 'A_2', 'E_2'];
 const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
 const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
 const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
+const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
@@ -106,6 +107,7 @@ Aubio().then(({ Pitch }) => {
       matchCircleL.style.visibility = 'visible';
 
       let prevCents = -50;
+      let prevNote = '';
       const prevNotes: string[] = new Array(3).fill('');
       const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(36).fill(50)]));
       const noopBuffer: string[] = new Array(36).fill('');
@@ -158,11 +160,13 @@ Aubio().then(({ Pitch }) => {
             const centsHits = centsBuffer.filter(x => x === 0);
 
             const referenceLength = 0.5 * centsBuffer.length;
-            const tuneRatio = Math.min(1, centsHits.length / referenceLength);
-            innerCircle.style.transition = prevNotes[0] !== note.name ? `transform 0ms` : `transform 350ms ease`
-            innerCircle.style.transition = `transform 350ms ease`;
+            const tuneRatio = clamp(centsHits.length / (referenceLength + 1));
+            // console.log(noteName, tuneRatio)
+            innerCircle.style.transition = prevNote !== noteName 
+              ? ''
+              : `transform 350ms ease`;
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
-            matchCircleR.style.color = (centsHits.length > referenceLength)
+            matchCircleR.style.color = tuneRatio === 1
               ? '#fff'
               : '#fff8';
 
@@ -172,6 +176,7 @@ Aubio().then(({ Pitch }) => {
             // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
 
             prevCents = centsUI;
+            prevNote = noteName;
           }
 
           queue(prevNotes, note.name);
@@ -181,7 +186,6 @@ Aubio().then(({ Pitch }) => {
   });
 });
 
-const peek = <T>(a?: T[] | null): T | undefined => a?.[0];
 const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
 
 function volumeAudioProcess(buf: Float32Array) {
