@@ -1,5 +1,5 @@
 /**
- * Copyright (C) 2020 Online Mic Test
+ * Copyright (C) 2021 Online Mic Test
  *
  * This program is free software: you can redistribute it and/or modify
  * it under the terms of the GNU Affero General Public License as published
@@ -15,110 +15,21 @@
  * along with this program.  If not, see <https://www.gnu.org/licenses/>.
  * @license
  */
-console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/pitch-detector')
 
-type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+import { initGetUserMedia } from "./init-get-user-media";
+import { toggleClass } from "./dom-fns";
+import { getNote } from "./music-fns";
+import { groupedUntilChanged } from "./iter";
 
-const middleA = 440;
+console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
-const SEMI_TONE = 69;
-const WHEEL_NOTES = 24;
 const BUFFER_SIZE = 2 ** 12;
-const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
-
 const GUITAR_NOTES = ['E_4', 'B_3', 'G_3', 'D_3', 'A_2', 'E_2'];
-
-const toggleClass = (element: HTMLElement, ...cls: string[]) => {
-  element.classList.remove(...cls);
-
-  // Force layout reflow
-  void element.offsetWidth;
-
-  element.classList.add(...cls);
-};
-
-function initGetUserMedia() {
-  // @ts-ignore
-  window.AudioContext = window.AudioContext || window.webkitAudioContext
-  if (!window.AudioContext) {
-    return alert('AudioContext not supported')
-  }
-
-  // Older browsers might not implement mediaDevices at all, so we set an empty object first
-  if (navigator.mediaDevices === undefined) {
-    // @ts-ignore
-    navigator.mediaDevices = {}
-  }
-
-  // Some browsers partially implement mediaDevices. We can't just assign an object
-  // with getUserMedia as it would overwrite existing properties.
-  // Here, we will just add the getUserMedia property if it's missing.
-  if (navigator.mediaDevices.getUserMedia === undefined) {
-    navigator.mediaDevices.getUserMedia = function (constraints) {
-      // First get ahold of the legacy getUserMedia, if present
-      // @ts-ignore
-      const getUserMedia = navigator.webkitGetUserMedia || navigator.mozGetUserMedia
-
-      // Some browsers just don't implement it - return a rejected promise with an error
-      // to keep a consistent interface
-      if (!getUserMedia) {
-        alert('getUserMedia is not implemented in this browser')
-      }
-
-      // Otherwise, wrap the call to the old navigator.getUserMedia with a Promise
-      return new Promise(function (resolve, reject) {
-        getUserMedia.call(navigator, constraints, resolve, reject)
-      })
-    }
-  }
-}
-
-interface Note {
-  value: number,
-  index: number,
-  name: NoteString
-  cents: number
-  octave: number,
-  frequency: number,
-}
-
-function getNote(frequency: number): Note {
-  const noteIndex = getNoteIndex(frequency);
-  return {
-    value: noteIndex % 12,
-    index: noteIndex,
-    name: NOTE_STRINGS[noteIndex % 12],
-    cents: getCents(frequency, noteIndex),
-    octave: Math.trunc(noteIndex / 12) - 1,
-    frequency: frequency,
-  };
-}
-
-/**
- * Get musical note from frequency
- */
-function getNoteIndex(frequency: number) {
-  const note = 12 * (Math.log(frequency / middleA) / Math.log(2))
-  return Math.round(note) + SEMI_TONE
-}
-
-/**
- * Get the musical note's standard frequency
- */
-function getStandardFrequency(note: number) {
-  return middleA * Math.pow(2, (note - SEMI_TONE) / 12)
-}
-
-/**
- * Get cents difference between given frequency and musical note's standard frequency
- */
-function getCents(frequency: number, note: number) {
-  return Math.floor((1200 * Math.log(frequency / getStandardFrequency(note))) / Math.log(2));
-}
 
 const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
 const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
 const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
+const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
@@ -142,6 +53,7 @@ Aubio().then(({ Pitch }) => {
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
+  const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
   // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
   // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
   // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
@@ -152,7 +64,7 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  const tuneUpText = matchCircleR.innerText;
+  const initText = matchCircleR.innerText;
 
   pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
@@ -162,8 +74,8 @@ Aubio().then(({ Pitch }) => {
 
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
-    matchCircleL.style.transform = `translateX(-30vw)`;
-    matchCircleR.innerText = tuneUpText;
+    matchCircleL.style.transform = `translateX(30vw)`;
+    matchCircleR.innerText = initText;
     matchCircleR.classList.add('with-text');
     matchCircleR.style.color = '';
     // freqTextEl.style.display = 'none';
@@ -176,7 +88,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
-    pitchDetector.setSilence(-70);
+    // pitchDetector.setSilence(-70);
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       // stream = s;
@@ -186,75 +98,95 @@ Aubio().then(({ Pitch }) => {
 
       startEl.style.display = 'none';
       pauseEl.style.display = 'block';
-      matchCircleR.innerText = '';
-      matchCircleR.classList.remove('with-text');
+      matchCircleR.innerText = 'Pluck a String';
+      matchCircleR.classList.add('with-text');
       // freqTextEl.style.display = 'block';
       // if (block2) block2.style.display = 'none';
       toggleClass(pauseEl, 'shrink-animation');
 
       matchCircleL.style.visibility = 'visible';
 
-      // console.time('foo');
       let prevCents = -50;
-      let prevNotes: string[] = new Array(3);
+      let prevNote = '';
+      const prevNotes: string[] = new Array(3).fill('');
+      const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(36).fill(50)]));
+      const noopBuffer: string[] = new Array(36).fill('');
 
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('foo');
         // console.time('foo');
 
         const buffer = event.inputBuffer.getChannelData(0)
-        const volume = volumeAudioProcess(buffer);
+        // const volume = volumeAudioProcess(buffer);
         const frequency = pitchDetector.do(buffer);
         const note = getNote(frequency);
 
-        // const unit = (360 / WHEEL_NOTES);
-        // const deg = note.index * unit + (note.cents / 100) * unit;
-        // console.log(note.name)
-
-        if (!note.name) return;
-
-        const noteId = `${note.name}_${note.octave}`;
-        if (GUITAR_NOTES.includes(noteId)) {
+        queue(noopBuffer, note.name);
+        if ([...groupedUntilChanged(noopBuffer.filter(n => !!n))].every(g => g.length <= 3)) {
+          // If there has been nothing but noise for the last couple of seconds,
+          // show the message again:
+          matchCircleR.innerText = 'Pluck a String';
+          matchCircleR.classList.add('with-text');
+          matchCircleL.style.transform = `translateX(30vw)`;
+          matchCircleR.style.color = '';
+        } else if (note.name) {
           if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
-
-            console.log(note);
+            // console.log(note);
 
             // if (prevNote == note.name)
             // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
             // prevDeg = deg;
             // const transformTime = (degDiff + 25) * 15;
 
-            const centsApprox = round(note.cents, 5);
-            console.log(centsApprox)
+            const absCents100 = Math.abs(note.cents) * 2;
+            const sensitivity = Math.min(10, Math.round(100 / absCents100));
+            const centsUI = round(note.cents, sensitivity);
+
+            // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
+            // const centsApprox = note.cents;
+            // console.log(centsApprox)
 
             // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
             // console.log(transitionTime)
 
             // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-            matchCircleL.style.transition = `transform 200ms ease`;
-            matchCircleL.style.transform = `translateX(${-centsApprox}%)`;
-
             matchCircleR.innerText = note.name;
-            if (centsApprox === 0) matchCircleR.style.color = '#fff';
-            else matchCircleR.style.color = '#fff8';
+            matchCircleR.classList.remove('with-text');
 
-            prevCents = centsApprox;
+            const noteName = `${note.name}_${note.octave}`;
+            queue(hitBuffer.get(noteName), centsUI);
+
+            const centsBuffer = hitBuffer.get(noteName) ?? [];
+            const centsHits = centsBuffer.filter(x => x === 0);
+
+            const referenceLength = 0.5 * centsBuffer.length;
+            const tuneRatio = clamp(centsHits.length / (referenceLength + 1));
+            // console.log(noteName, tuneRatio)
+            innerCircle.style.transition = prevNote !== noteName 
+              ? ''
+              : `transform 350ms ease`;
+            innerCircle.style.transform = `scale(${1 - tuneRatio})`;
+            matchCircleR.style.color = tuneRatio === 1
+              ? '#fff'
+              : '#fff8';
+
+            matchCircleL.style.transition = `transform 350ms ease`;
+            matchCircleL.style.transform = `translateX(${centsUI * (1 - tuneRatio)}%)`;
+
+            // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
+
+            prevCents = centsUI;
+            prevNote = noteName;
           }
 
-          prevNotes.pop();
-          prevNotes.unshift(note.name);
-
-          // freqSpan.innerText = note.frequency.toFixed(1);
-          // noteSpan.innerText = note.name;
-          // octaveSpan.innerText = note.octave.toString();
-
-          // wheel.style.transition = `transform ${transformTime}ms ease`;
-          // wheel.style.transform = `rotate(-${deg}deg)`;
+          queue(prevNotes, note.name);
         }
       });
     });
   });
 });
+
+const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
 
 function volumeAudioProcess(buf: Float32Array) {
   let bufLength = buf.length;
