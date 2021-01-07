@@ -19,6 +19,7 @@
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
+import { groupedUntilChanged } from "./iter";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
@@ -51,6 +52,7 @@ Aubio().then(({ Pitch }) => {
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
+  const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
   // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
   // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
   // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
@@ -61,7 +63,7 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  // const tuneUpText = matchCircleR.innerText;
+  const initText = matchCircleR.innerText;
 
   pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
@@ -72,7 +74,7 @@ Aubio().then(({ Pitch }) => {
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
     matchCircleL.style.transform = `translateX(30vw)`;
-    matchCircleR.innerText = '';
+    matchCircleR.innerText = initText;
     matchCircleR.classList.add('with-text');
     matchCircleR.style.color = '';
     // freqTextEl.style.display = 'none';
@@ -85,7 +87,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
-    pitchDetector.setSilence(-70);
+    // pitchDetector.setSilence(-70);
 
     navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
       // stream = s;
@@ -103,78 +105,83 @@ Aubio().then(({ Pitch }) => {
 
       matchCircleL.style.visibility = 'visible';
 
-      // console.time('foo');
       let prevCents = -50;
-      const prevNotes: string[] = ['', '', ''];
-      // ~2 seconds at 85ms per audioprocess event
-      const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(24).fill(50)]));
+      const prevNotes: string[] = new Array(3).fill('');
+      const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(36).fill(50)]));
+      const noopBuffer: string[] = new Array(36).fill('');
 
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('foo');
         // console.time('foo');
 
         const buffer = event.inputBuffer.getChannelData(0)
-        const volume = volumeAudioProcess(buffer);
+        // const volume = volumeAudioProcess(buffer);
         const frequency = pitchDetector.do(buffer);
         const note = getNote(frequency);
 
-        // const unit = (360 / WHEEL_NOTES);
-        // const deg = note.index * unit + (note.cents / 100) * unit;
-        // console.log(note.name)
+        queue(noopBuffer, note.name);
+        if ([...groupedUntilChanged(noopBuffer.filter(n => !!n))].every(g => g.length <= 3)) {
+          // If there has been nothing but noise for the last couple of seconds,
+          // show the message again:
+          matchCircleR.innerText = 'Pluck a String';
+          matchCircleR.classList.add('with-text');
+          matchCircleL.style.transform = `translateX(30vw)`;
+          matchCircleR.style.color = '';
+        } else if (note.name) {
+          if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
+            // console.log(note);
 
-        if (!note.name) return;
+            // if (prevNote == note.name)
+            // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
+            // prevDeg = deg;
+            // const transformTime = (degDiff + 25) * 15;
 
-        if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
-          // console.log(note);
+            const absCents100 = Math.abs(note.cents) * 2;
+            const sensitivity = Math.min(10, Math.round(100 / absCents100));
+            const centsUI = round(note.cents, sensitivity);
 
-          // if (prevNote == note.name)
-          // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
-          // prevDeg = deg;
-          // const transformTime = (degDiff + 25) * 15;
-          const noteName = `${note.name}_${note.octave}`;
+            // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
+            // const centsApprox = note.cents;
+            // console.log(centsApprox)
 
-          const absCents100 = Math.abs(note.cents) * 2;
-          const sensitivity = Math.min(10, Math.round((1 / absCents100) * 100));
-          const centsUI = round(note.cents, sensitivity);
-          queue(hitBuffer.get(noteName), centsUI);
-          // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
-          // const centsApprox = note.cents;
-          // console.log(centsApprox)
+            // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
+            // console.log(transitionTime)
 
-          // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
-          // console.log(transitionTime)
+            // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+            matchCircleR.innerText = note.name;
+            matchCircleR.classList.remove('with-text');
 
-          // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-          matchCircleL.style.transition = `transform 200ms ease`;
-          matchCircleL.style.transform = `translateX(${centsUI}%)`;
+            const noteName = `${note.name}_${note.octave}`;
+            queue(hitBuffer.get(noteName), centsUI);
 
-          matchCircleR.innerText = note.name;
-          matchCircleR.classList.remove('with-text');
+            const centsBuffer = hitBuffer.get(noteName) ?? [];
+            const centsHits = centsBuffer.filter(x => x === 0);
 
-          const centsBuffer = hitBuffer.get(noteName) ?? [];
-          const centsHits = centsBuffer.filter(x => x === 0);
+            const referenceLength = 0.5 * centsBuffer.length;
+            const tuneRatio = Math.min(1, centsHits.length / referenceLength);
+            innerCircle.style.transition = prevNotes[0] !== note.name ? `transform 0ms` : `transform 350ms ease`
+            innerCircle.style.transition = `transform 350ms ease`;
+            innerCircle.style.transform = `scale(${1 - tuneRatio})`;
+            matchCircleR.style.color = (centsHits.length > referenceLength)
+              ? '#fff'
+              : '#fff8';
 
-          if (centsHits.length > .5 * centsBuffer.length && centsUI === 0) matchCircleR.style.color = '#fff';
-          else matchCircleR.style.color = '#fff8';
+            matchCircleL.style.transition = `transform 350ms ease`;
+            matchCircleL.style.transform = `translateX(${centsUI * (1 - tuneRatio)}%)`;
 
-          console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
+            // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
 
-          prevCents = centsUI;
+            prevCents = centsUI;
+          }
+
+          queue(prevNotes, note.name);
         }
-
-        queue(prevNotes, note.name);
-
-        // freqSpan.innerText = note.frequency.toFixed(1);
-        // noteSpan.innerText = note.name;
-        // octaveSpan.innerText = note.octave.toString();
-
-        // wheel.style.transition = `transform ${transformTime}ms ease`;
-        // wheel.style.transform = `rotate(-${deg}deg)`;
       });
     });
   });
 });
 
+const peek = <T>(a?: T[] | null): T | undefined => a?.[0];
 const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
 
 function volumeAudioProcess(buf: Float32Array) {

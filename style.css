@@ -28,6 +28,7 @@
 }
 
 #match-circle-l {
+  position: relative;
   visibility: hidden;
   background: #e25d1b;
   /* background: #e25d1b7c; */
@@ -41,6 +42,16 @@
   /* background: #cae1ff77; */
   /* background: #cae1ff; */
   /* transform: translateX(9.5vw); */
+}
+
+#inner-circle {
+  border-radius: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(67, 111, 142, 0.175);
 }
 
 #match-circle-r.with-text {
@@ -87,7 +98,7 @@
   position: relative;
   height: 100%;
   overflow: hidden;
-  border: .2vw solid rgb(67,111,142);
+  border: .175vw solid rgb(67,111,142);
   border-radius: 25px;
   /* margin-left: -5vw;
   margin-right: -5vw;
