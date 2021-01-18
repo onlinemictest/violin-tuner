@@ -79,6 +79,31 @@
   margin-bottom: -11.25px;
 }
 
+.tune-text {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  font-family: 'Open Sans Condensed';
+  font-weight: bold;
+  font-size: 1.6vw;
+  color: rgb(67,111,142);
+  transition: transform 350ms ease;
+}
+
+#tune-up-text { 
+  top: .5vw; 
+  transform: translateY(-3vw);
+}
+
+#tune-down-text { 
+  bottom: .5vw; 
+  transform: translateY(3vw);
+}
+
+.tune-text.show {
+  transform: translateY(0)!important;
+}
+
 .audio-button {
   background: #fff!important;
   z-index: 10;

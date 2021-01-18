@@ -19,17 +19,33 @@
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
-import { groupedUntilChanged } from "./iter";
+import { first, groupedUntilChanged } from "./iter";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
 const BUFFER_SIZE = 2 ** 12;
-const GUITAR_NOTES = ['E_4', 'B_3', 'G_3', 'D_3', 'A_2', 'E_2'];
+
+const GUITAR_FREQ = {
+  'E_4': 329.63,
+  'B_3': 246.94,
+  'G_3': 196.00,
+  'D_3': 146.83,
+  'A_2': 110.00,
+  'E_2': 82.41,
+};
+const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
+const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
+const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
 const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
 const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
 const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
+
+const closest = (a: number[], goal: number) => a.reduce((prev, curr) => (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
+
+const throwError = (m?: string) => { throw Error(m) };
+const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
@@ -51,6 +67,8 @@ Aubio().then(({ Pitch }) => {
   // const octaveSpan = document.getElementById('pitch-freq')?.querySelector('.octave') as HTMLElement | null;
   const startEl = document.getElementById('audio-start') as HTMLButtonElement;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
+  const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement;
+  const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
@@ -78,6 +96,8 @@ Aubio().then(({ Pitch }) => {
     matchCircleR.innerText = initText;
     matchCircleR.classList.add('with-text');
     matchCircleR.style.color = '';
+    tuneUpText.classList.remove('show');
+    tuneDownText.classList.remove('show');
     // freqTextEl.style.display = 'none';
     // if (block2) block2.style.display = 'block';
     toggleClass(startEl, 'blob-animation');
@@ -108,6 +128,7 @@ Aubio().then(({ Pitch }) => {
 
       let prevCents = -50;
       let prevNote = '';
+      let resetable = false;
       const prevNotes: string[] = new Array(3).fill('');
       const hitBuffer: Map<string, number[]> = new Map(GUITAR_NOTES.map(n => [n, new Array(36).fill(50)]));
       const noopBuffer: string[] = new Array(36).fill('');
@@ -123,24 +144,44 @@ Aubio().then(({ Pitch }) => {
 
         queue(noopBuffer, note.name);
         if ([...groupedUntilChanged(noopBuffer.filter(n => !!n))].every(g => g.length <= 3)) {
-          // If there has been nothing but noise for the last couple of seconds,
-          // show the message again:
-          matchCircleR.innerText = 'Pluck a String';
-          matchCircleR.classList.add('with-text');
-          matchCircleL.style.transform = `translateX(30vw)`;
-          matchCircleR.style.color = '';
+          // If there has been nothing but noise for the last couple of seconds, show the message again:
+          if (resetable) {
+            resetable = false;
+            matchCircleR.innerText = 'Pluck a String';
+            matchCircleR.classList.add('with-text');
+            matchCircleL.style.transform = `translateX(30vw)`;
+            matchCircleR.style.color = '';
+          }
         } else if (note.name) {
+          const noteName = `${note.name}_${note.octave}`;
+          const guitarNoteName = getClosestGuitarNote(frequency);
+
+          const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
+          if (noteName === guitarNoteName && note.cents < 25) {
+            tuneUpText.classList.remove('show');
+            tuneDownText.classList.remove('show');
+          } else {
+            tuneUpText.classList[isTooLow ? 'add' : 'remove']('show');
+            tuneDownText.classList[isTooLow ? 'remove' : 'add']('show');
+          }
+
           if (prevNotes.every(_ => _ === note.name) && !Number.isNaN(note.cents)) {
+            resetable = true;
             // console.log(note);
 
             // if (prevNote == note.name)
             // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
             // prevDeg = deg;
             // const transformTime = (degDiff + 25) * 15;
+            console.log(noteName, note.cents)
 
-            const absCents100 = Math.abs(note.cents) * 2;
+            const baseCents = noteName === guitarNoteName 
+              ? note.cents 
+              : isTooLow ? -85 : 85;
+
+            const absCents100 = Math.abs(baseCents) * 2;
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
-            const centsUI = round(note.cents, sensitivity);
+            const centsUI = round(baseCents, sensitivity);
 
             // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
             // const centsApprox = note.cents;
@@ -150,19 +191,18 @@ Aubio().then(({ Pitch }) => {
             // console.log(transitionTime)
 
             // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-            matchCircleR.innerText = note.name;
+            matchCircleR.innerText = guitarNoteName.split('_')[0];
             matchCircleR.classList.remove('with-text');
 
-            const noteName = `${note.name}_${note.octave}`;
             queue(hitBuffer.get(noteName), centsUI);
 
             const centsBuffer = hitBuffer.get(noteName) ?? [];
             const centsHits = centsBuffer.filter(x => x === 0);
 
-            const referenceLength = 0.5 * centsBuffer.length;
-            const tuneRatio = clamp(centsHits.length / (referenceLength + 1));
+            const referenceLength = centsBuffer.length / 2 + 1;
+            const tuneRatio = clamp(centsHits.length / referenceLength);
             // console.log(noteName, tuneRatio)
-            innerCircle.style.transition = prevNote !== noteName 
+            innerCircle.style.transition = prevNote !== noteName
               ? ''
               : `transform 350ms ease`;
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
@@ -196,20 +236,12 @@ function volumeAudioProcess(buf: Float32Array) {
   // Do a root-mean-square on the samples: sum up the squares...
   for (let i = 0; i < bufLength; i++) {
     x = buf[i];
-    // if (Math.abs(x) >= clipLevel) {
-    //   this.clipping = true;
-    //   lastClip = window.performance.now();
-    // }
     sum += x * x;
   }
 
   // ... then take the square root of the sum.
   let rms = Math.sqrt(sum / bufLength);
 
-  // Now smooth this out with the averaging factor applied
-  // to the previous sample - take the max here because we
-  // want "fast attack, slow release."
-  // this.volume = Math.max(rms, this.volume * this.averaging);
   return rms;
 }
 

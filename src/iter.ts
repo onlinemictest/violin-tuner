@@ -26,3 +26,7 @@ export function* groupedUntilChanged<X>(xs: Iterable<X>, equals: (a: X, b: X) =>
 
   if (group.length) yield group
 }
+
+export function first<X>(xs: Iterable<X>) {
+  for (const x of xs) return x;
+}
