@@ -1,5 +1,8 @@
+.vscode
 onlinemictest_files
 node_modules
 dist
 old
 *.svg
+*.mp3
+*.wav

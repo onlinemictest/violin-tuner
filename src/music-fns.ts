@@ -48,3 +48,21 @@ export function getStandardFrequency(note: number) {
 export function getCents(frequency: number, note: number) {
   return Math.floor((1200 * Math.log(frequency / getStandardFrequency(note))) / Math.log(2));
 }
+
+export function volumeAudioProcess(buf: Float32Array) {
+  let bufLength = buf.length;
+  let sum = 0;
+  let x;
+
+  // Do a root-mean-square on the samples: sum up the squares...
+  for (let i = 0; i < bufLength; i++) {
+    x = buf[i];
+    sum += x * x;
+  }
+
+  // ... then take the square root of the sum.
+  let rms = Math.sqrt(sum / bufLength);
+
+  return rms;
+}
+
