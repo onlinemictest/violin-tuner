@@ -251,7 +251,7 @@ Aubio().then(({ Pitch }) => {
 
             if (tuneRatio === 1 && !jinglePlayed) {
               tunedJingle.play();
-              set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', '#e25d1b');
+              set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayed = true;
             }

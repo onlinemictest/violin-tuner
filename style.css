@@ -70,7 +70,6 @@
   width: 135px;
   height: 135px;
   top: 50%;
-  left: 1.5px;
   margin-top: -67.5px;
   left: -67.5px;
 }
@@ -84,6 +83,17 @@
   bottom: 1.5px;
   margin-left: -22.5px;
   margin-bottom: -11.25px;
+}
+
+@media only screen and (max-width: 1024px) {
+  #audio-start {
+    top: 1.5px;
+    left: 50%;
+    margin-left: -67.5px;
+  }
+
+  #audio-pause {
+  }
 }
 
 .tune-text {
@@ -129,7 +139,6 @@
 .square-ratio {
   position: relative;
 }
-
 .square-ratio::before {
   content: "";
   width: 1px;
@@ -147,12 +156,21 @@
 #tune-up-box {
   position: absolute;
   border: .25vw solid rgb(67,111,142);
+  background: #fff;;
   border-radius: 25px;
   width: 100%;
   height: 100%;
   overflow: hidden;
 }
 
+@media only screen and (max-width: 1024px) {
+  .square-ratio {
+    margin-top: -15vw;
+  }
+  #tune-up-box {
+    border: 1vw solid rgb(67,111,142);
+  }
+}
 
 .tuners-privacy-box {
   font-family: 'Open Sans Condensed';
@@ -167,91 +185,6 @@
   color: rgb(67,111,142);
 }
 
-/* #pitch-wheel {
-  font-family: 'Open Sans Condensed';
-  font-weight: bold;
-  width: 100%;
-  margin-left: 0;
-  height: 32vw;
-  overflow: hidden;
-  margin-top: 30px;
-  contain: content;
-  padding: 0 5vw;
-
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-
-  -webkit-mask-image: -webkit-linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  );
-  mask-image: linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  );
-}
-
-@media only screen and (max-width: 1024px) {
-  #pitch-wheel {
-    height: 38vw;
-    padding: 0;
-  }
-}
-
-#pitch-wheel-needle {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin: auto;
-  width: 0;
-  height: 3vw;
-  border-left: 3vw solid transparent;
-  border-right: 3vw solid transparent;
-  border-top: 3vw solid rgb(67,111,142);
-}
-
-#pitch-wheel-needle.active {
-  border-top-color: #e25c1b;
-}
-
-#pitch-wheel-svg {
-  width: 200%; 
-  margin-left: -50%; 
-  transform: rotate(-1035deg);
-  transform-origin: center center;
-}
-
-#pitch-detector {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-#pitch-audio-start {
-  position: relative;
-  min-height: 150px;
-  margin-bottom: 20px;
-}
-
-.audio-button {
-  margin: 0 auto;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  outline: none;
-  transition: transform 1s ease;
-  margin-bottom: 20px;
-}
-
-*/
 .shrink-animation, .blob-animation {
   transform-origin: center center;
   animation-duration: 125ms;
@@ -265,52 +198,6 @@
 .blob-animation {
   animation-name: blob-animation;
 }
-/*
-#audio-start {
-  width: 135px;
-  height: 135px;
-}
-
-#audio-pause {
-  width: 45px;
-  height: 45px;
-  display: none;
-}
-
-#pitch-freq {
-  font-family: 'Open Sans Condensed'; 
-  font-weight: bold; 
-  text-align: center; 
-  position: relative; 
-  min-height: 150px;
-  max-width: 500px;
-  margin: auto;
-  padding: 0 1vw;
-  top: -12.5vw; 
-  color: rgb(67,111,142);
-}
-
-@media only screen and (min-aspect-ratio: 21/9) {
-  #pitch-wheel {
-    padding: 0 10vw;
-  }
-  #pitch-freq {
-    top: -16.5vw;
-  }
-}
-
-#pitch-freq-text {
-  display: none;
-  font-size: 50px; 
-  line-height: 50px;
-  padding: 25px 0;
-  contain: content;
-}
-
-#pitch-freq-text + div {
-  margin-top: 25px;
-}
-*/
 
 .shockwave {
   position: absolute;
