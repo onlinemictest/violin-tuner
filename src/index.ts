@@ -42,6 +42,8 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
 const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
+const set = (obj: any, prop: any, value: any) => obj && (obj[prop] = value);
+
 // Math fns
 const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
 const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
@@ -81,8 +83,16 @@ Aubio().then(({ Pitch }) => {
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
+
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
   tunedJingle.volume = 0.5;
+
+  const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]))
+  const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]))
+  fillEls.forEach(el => el.style.display = 'none');
+
+  // if (fillEls.some(x => x == null)) return;
+
   // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
   // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
   // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
@@ -104,7 +114,7 @@ Aubio().then(({ Pitch }) => {
 
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
-    matchCircleL.style.transform = `translateX(30vw)`;
+    matchCircleL.style.transform = `translateX(125%)`;
     matchCircleR.innerText = initText;
     matchCircleR.classList.add('with-text');
     matchCircleR.style.color = '';
@@ -174,7 +184,7 @@ Aubio().then(({ Pitch }) => {
             matchCircleR.innerText = 'Pluck a String';
             matchCircleR.classList.add('with-text');
             matchCircleR.style.color = '';
-            matchCircleL.style.transform = `translateX(30vw)`;
+            matchCircleL.style.transform = `translateX(125%)`;
             tuneUpText.classList.remove('show');
             tuneDownText.classList.remove('show');
           }
@@ -241,6 +251,8 @@ Aubio().then(({ Pitch }) => {
 
             if (tuneRatio === 1 && !jinglePlayed) {
               tunedJingle.play();
+              set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', '#e25d1b');
+              set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayed = true;
             }
 
