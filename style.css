@@ -50,7 +50,6 @@
 }
 
 #match-circle-r {
-  font-size: 10vw;
   background: rgba(67, 111, 142, 0.125);
   display: flex;
   align-items: center;
@@ -71,7 +70,11 @@
   background: rgba(0, 0, 0, 0.125);
 }
 
-#match-circle-r.with-text {
+#circle-text-note {
+  font-size: 10vw;
+}
+
+#circle-text-play, #circle-text-pluck {
   font-size: 2.5vw;
   color: rgb(67,111,142);
 }

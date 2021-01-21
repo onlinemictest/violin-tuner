@@ -81,6 +81,7 @@ Aubio().then(({ Pitch }) => {
   const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement | null;
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
+  const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
@@ -98,6 +99,7 @@ Aubio().then(({ Pitch }) => {
     || !tuneDownText
     || !pressPlay
     || !pluckAString
+    || !noteSpan
     || !matchCircleL
     || !matchCircleR
     || !innerCircle
@@ -124,7 +126,7 @@ Aubio().then(({ Pitch }) => {
     pauseEl.style.display = 'none';
     pressPlay.style.display = 'inline';
     pluckAString.style.display = 'none';
-    matchCircleR.classList.add('with-text');
+    noteSpan.style.display = 'none';
     matchCircleR.style.color = '';
     matchCircleL.style.transform = `translateX(125%)`;
     tuneUpText.classList.remove('show');
@@ -149,7 +151,6 @@ Aubio().then(({ Pitch }) => {
       pauseEl.style.display = 'block';
       pressPlay.style.display = 'none';
       pluckAString.style.display = 'inline';
-      matchCircleR.classList.add('with-text');
       toggleClass(pauseEl, 'shrink-animation');
 
       matchCircleL.style.visibility = 'visible';
@@ -191,7 +192,7 @@ Aubio().then(({ Pitch }) => {
             resetable = false;
             pressPlay.style.display = 'none';
             pluckAString.style.display = 'inline';
-            matchCircleR.classList.add('with-text');
+            noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
             matchCircleL.style.transform = `translateX(125%)`;
             tuneUpText.classList.remove('show');
@@ -240,8 +241,9 @@ Aubio().then(({ Pitch }) => {
             // console.log(transitionTime)
 
             // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-            matchCircleR.innerText = guitarNoteName.split('_')[0];
-            matchCircleR.classList.remove('with-text');
+            pluckAString.style.display = 'none';
+            noteSpan.style.display = 'inline';
+            noteSpan.innerText = guitarNoteName.split('_')[0];
 
             const centsBuffer = centsBufferMap.get(noteName) ?? [];
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
