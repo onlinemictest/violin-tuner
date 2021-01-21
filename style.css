@@ -1,3 +1,5 @@
+@media only screen and (max-width: 768px) { .xs-dis-block { display: block } }
+
 #guitar-tuner {
   margin: 30px 0;
 
@@ -11,7 +13,11 @@
   height: 100%;
   padding-right: 5.5vw;
 }
-@media only screen and (max-width: 1024px) {
+
+@media only screen and (max-width: 768px) {
+  #guitar-tuner {
+    margin-top: 0;
+  }
   #guitar-tuner-img {
     padding-right: 0;
   }
@@ -66,6 +72,12 @@
   color: rgb(67,111,142);
 }
 
+@media only screen and (max-width: 768px) {
+  #match-circle-r.with-text {
+    font-size: 8.5vw;
+  }
+}
+
 #audio-start {
   width: 135px;
   height: 135px;
@@ -85,14 +97,15 @@
   margin-bottom: -11.25px;
 }
 
-@media only screen and (max-width: 1024px) {
+@media only screen and (max-width: 768px) {
   #audio-start {
-    top: 1.5px;
+    top: 0;
     left: 50%;
     margin-left: -67.5px;
   }
-
   #audio-pause {
+    left: 50%;
+    margin-bottom: -22.5px;
   }
 }
 
@@ -122,12 +135,11 @@
 }
 
 .audio-button {
-  background: #fff!important;
+  background: #fbfbfb;
   z-index: 10;
   position: absolute;
   margin: 0 auto;
   padding: 0;
-  background: none;
   border: none;
   cursor: pointer;
   outline: none;
@@ -155,8 +167,8 @@
 
 #tune-up-box {
   position: absolute;
-  border: .25vw solid rgb(67,111,142);
-  background: #fff;;
+  border: .2vw solid rgb(67,111,142);
+  background: #fbfbfb;
   border-radius: 25px;
   width: 100%;
   height: 100%;
@@ -164,11 +176,23 @@
 }
 
 @media only screen and (max-width: 1024px) {
+  #tune-up-box {
+    border: .3vw solid rgb(67,111,142);
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  #tune-up-box {
+    border: .7vw solid rgb(67,111,142);
+  }
   .square-ratio {
     margin-top: -15vw;
   }
-  #tune-up-box {
-    border: 1vw solid rgb(67,111,142);
+}
+
+@media only screen and (min-aspect-ratio: 21/9) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
   }
 }
 
