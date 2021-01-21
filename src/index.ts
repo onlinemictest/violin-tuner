@@ -89,8 +89,7 @@ Aubio().then(({ Pitch }) => {
 
   const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]))
   const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]))
-  fillEls.forEach(el => el.style.display = 'none');
-
+  // fillEls.forEach(el => el.style.display = 'none');
   // if (fillEls.some(x => x == null)) return;
 
   // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
