@@ -6,12 +6,13 @@
   "type": "module",
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
-    "postinstall": "npm run postinstall:1; npm run postinstall:2",
-    "postinstall:1": "for file in `ls .git-hooks`; do ln -sf ../../.git-hooks/${file} .git/hooks/${file}; done",
-    "postinstall:2": "npm run post-commit",
-    "pre-commit": "echo '<!--svg-->' | bin/into.js '<svg[\\s\\S]*</svg>' index.html && git add index.html",
-    "post-commit": "cat guitar.svg | bin/into.js '<!--svg-->' index.html",
-    "uninstall-hooks": "for file in `ls .git-hooks`; do rm .git/hooks/${file}; done"
+    "postinstall": "npm run install-bin; npm run install-hooks; npm run post-commit",
+    "pre-commit": "echo '<!--svg-->' | into.js '<svg[\\s\\S]*</svg>' index.html && git add index.html",
+    "post-commit": "cat guitar.svg | into.js '<!--svg-->' index.html",
+    "install-hooks": "for f in `ls .git-hooks`; do ln -sf ../../.git-hooks/${f} .git/hooks/${f}; done",
+    "install-bin": "for f in `ls .bin`; do ln -sf ../../.bin/${f} node_modules/.bin/${f}; done",
+    "uninstall-hooks": "for f in `ls .git-hooks`; do rm .git/hooks/${f}; done",
+    "uninstall-bin": "for f in `ls .bin`; do rm node_modules/.bin/${f}; done"
   },
   "author": "Florian Klampfer <mail@qwtel.com> (https://qwtel.com/)",
   "devDependencies": {
