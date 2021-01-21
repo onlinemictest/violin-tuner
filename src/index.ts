@@ -42,11 +42,14 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
 const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
+// Helper fns
 const set = (obj: any, prop: any, value: any) => obj && (obj[prop] = value);
+const isTruthy = (x: any) => !!x;
+const isFalsey = (x: any) => !x;
 
 // Math fns
-const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
-const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
+// const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
+// const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
 const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
 const clamp = (n: number) => Math.max(0, Math.min(1, n));
 
@@ -58,45 +61,56 @@ const closest = (a: number[], goal: number) => a.reduce((prev, curr) =>
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
+if (false
+  || !('WebAssembly' in window) 
+  || !('AudioContext' in window) 
+  || !('createAnalyser' in AudioContext.prototype) 
+  || !('createScriptProcessor' in AudioContext.prototype) 
+) {
+  if (!('WebAssembly' in window)) throw alert(`Browser not supported: 'WebAssembly' is not defined`);
+  if (!('AudioContext' in window)) throw alert(`Browser not supported: 'AudioContext' is not defined`)
+  if (!('createAnalyser' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createAnalyser' is not defined`)
+  if (!('createScriptProcessor' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createScriptProcessor' is not defined`)
+}
+
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
   initGetUserMedia();
 
-  if (
-    !('WebAssembly' in window) ||
-    !('AudioContext' in window) ||
-    !('createAnalyser' in AudioContext.prototype) ||
-    !('createScriptProcessor' in AudioContext.prototype) ||
-    !('trunc' in Math)
-  ) {
-    return alert('Browser not supported')
-  }
-
-  // const wheel = document.getElementById('pitch-wheel-svg') as HTMLImageElement | null;
-  // const freqSpan = document.getElementById('pitch-freq')?.querySelector('.freq') as HTMLElement | null;
-  // const noteSpan = document.getElementById('pitch-freq')?.querySelector('.note') as HTMLElement | null;
-  // const octaveSpan = document.getEbbbulementById('pitch-freq')?.querySelector('.octave') as HTMLElement | null;
-  const startEl = document.getElementById('audio-start') as HTMLButtonElement;
-  const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
-  const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement;
-  const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement;
-  const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement
-  const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement;
-  const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
-  const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
-  const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
+  const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
+  const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
+  const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement | null;
+  const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement | null;
+  const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
+  const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
+  const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
+  const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
+  const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
+  const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
   tunedJingle.volume = 0.5;
 
-  const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]))
-  const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]))
-  // fillEls.forEach(el => el.style.display = 'none');
-  // if (fillEls.some(x => x == null)) return;
+  const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
+  const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
-  // const freqTextEl = document.getElementById('pitch-freq-text') as HTMLElement | null;
-  // const block2 = document.querySelector('.audio-block-2') as HTMLElement | null;
-  // if (!wheel || !freqSpan || !noteSpan || !octaveSpan || !startEl || !pauseEl || !freqTextEl) return;
+  if (false
+    || !startEl
+    || !pauseEl
+    || !tuneUpText
+    || !tuneDownText
+    || !pressPlay
+    || !pluckAString
+    || !noteSpan
+    || !matchCircleL
+    || !matchCircleR
+    || !innerCircle
+    || !tunedJingle
+    || ![...noteEls.values()].every(isTruthy)
+    || ![...fillEls.values()].every(isTruthy)
+  ) {
+    return alert('Expected HTML element missing');
+  }
 
   let audioContext: AudioContext;
   let analyser: AnalyserNode;
@@ -114,13 +128,11 @@ Aubio().then(({ Pitch }) => {
     pauseEl.style.display = 'none';
     pressPlay.style.display = 'inline';
     pluckAString.style.display = 'none';
-    matchCircleR.classList.add('with-text');
+    noteSpan.style.display = 'none';
     matchCircleR.style.color = '';
     matchCircleL.style.transform = `translateX(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
-    // freqTextEl.style.display = 'none';
-    // if (block2) block2.style.display = 'block';
     toggleClass(startEl, 'blob-animation');
   })
 
@@ -141,9 +153,6 @@ Aubio().then(({ Pitch }) => {
       pauseEl.style.display = 'block';
       pressPlay.style.display = 'none';
       pluckAString.style.display = 'inline';
-      matchCircleR.classList.add('with-text');
-      // freqTextEl.style.display = 'block';
-      // if (block2) block2.style.display = 'none';
       toggleClass(pauseEl, 'shrink-animation');
 
       matchCircleL.style.visibility = 'visible';
@@ -157,12 +166,15 @@ Aubio().then(({ Pitch }) => {
 
       /** The last 3 notes excluding undefined */
       const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
-      // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
-      // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
+
       /** The last 36 notes (prox. 2 seconds). Used to fully reset the UI when there's only noise. */
       const noopBuffer: string[] = new Array(NOOP_BUFFER_SIZE).fill(undefined);
+
       /** A buffer of the last 36 cents values for each guitar note. Used to determine if a string is tuned. */
       let centsBufferMap: Map<string, number[]> = new Map(GUITAR_NOTES.map(nn => [nn, []]));
+
+      // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
+      // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('foo');
@@ -175,15 +187,14 @@ Aubio().then(({ Pitch }) => {
 
         queue(noopBuffer, note.name);
 
-        // console.log([...groupedUntilChanged(noopBuffer)].map(x => `${x[0] ?? '-'},${x.length}`))
-
-        if ([...groupedUntilChanged(noopBuffer.filter(n => !!n))].every(g => g.length <= 3)) {
-          // If there has been nothing but noise for the last couple of seconds, show the message again:
+        // If there has been nothing but noise for the last couple of seconds, show the message again:
+        const isNoise = [...groupedUntilChanged(noopBuffer.filter(isTruthy))].every(g => g.length <= 3);
+        if (isNoise) {
           if (resetable) {
             resetable = false;
             pressPlay.style.display = 'none';
             pluckAString.style.display = 'inline';
-            matchCircleR.classList.add('with-text');
+            noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
             matchCircleL.style.transform = `translateX(125%)`;
             tuneUpText.classList.remove('show');
@@ -232,12 +243,12 @@ Aubio().then(({ Pitch }) => {
             // console.log(transitionTime)
 
             // matchCircleR.style.transform = `translateX(${note.cents}%)`;
-            matchCircleR.innerText = guitarNoteName.split('_')[0];
-            matchCircleR.classList.remove('with-text');
+            pluckAString.style.display = 'none';
+            noteSpan.style.display = 'inline';
+            noteSpan.innerText = guitarNoteName.split('_')[0];
 
             const centsBuffer = centsBufferMap.get(noteName) ?? [];
-            if (noteName === guitarNoteName && centsUI === 0)
-              centsBuffer.push(0);
+            if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
             const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE);
             // console.log(noteName, tuneRatio)
