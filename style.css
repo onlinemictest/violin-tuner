@@ -76,6 +76,10 @@
   color: rgb(67,111,142);
 }
 
+#circle-text-pluck { 
+  display: none;
+}
+
 @media only screen and (max-width: 768px) {
   #match-circle-r.with-text {
     font-size: 8.5vw;
