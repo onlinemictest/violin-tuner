@@ -1,3 +1,5 @@
+@media only screen and (max-width: 768px) { .xs-dis-block { display: block } }
+
 #guitar-tuner {
   margin: 30px 0;
 
@@ -7,38 +9,53 @@
 }
 
 #guitar-tuner-img {
-  width: 50%;
+  width: 100%;
+  height: 100%;
+  padding-right: 5.5vw;
+}
+
+@media only screen and (max-width: 768px) {
+  #guitar-tuner {
+    margin-top: 0;
+  }
+  #guitar-tuner-img {
+    padding-right: 0;
+  }
+}
+
+[id$="-fill"] { 
+  display: none;
 }
 
 .match-circle {
   border-radius: 100%;
-  width: 20vw;
-  height: 20vw;
+  width: 70%;
+  height: 70%;
   position: absolute;
   top: 50%;
   left: 50%;
-  margin-top: -10vw;
-  margin-left: -10vw;
+  margin-top: -35%;
+  margin-left: -35%;
   /* transition: transform 200ms ease; */
   text-align: center;
-  line-height: 20vw;
   font-family: 'Open Sans Condensed';
   font-weight: bold;
   transform-origin: center center;
 }
 
 #match-circle-l {
-  position: relative;
-  visibility: hidden;
   background: #e25d1b;
   /* background: #e25d1b7c; */
-  transform: translateX(30vw);
+  transform: translateX(125%);
 }
 
 #match-circle-r {
   font-size: 10vw;
-  /* background: rgba(0, 0, 0, 0.15); */
   background: rgba(67, 111, 142, 0.125);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  /* background: rgba(0, 0, 0, 0.15); */
   /* background: #cae1ff77; */
   /* background: #cae1ff; */
   /* transform: translateX(9.5vw); */
@@ -51,7 +68,7 @@
   left: 0;
   right: 0;
   bottom: 0;
-  background-color: rgba(67, 111, 142, 0.175);
+  background: rgba(0, 0, 0, 0.125);
 }
 
 #match-circle-r.with-text {
@@ -59,11 +76,16 @@
   color: rgb(67,111,142);
 }
 
+@media only screen and (max-width: 768px) {
+  #match-circle-r.with-text {
+    font-size: 8.5vw;
+  }
+}
+
 #audio-start {
   width: 135px;
   height: 135px;
   top: 50%;
-  left: 1.5px;
   margin-top: -67.5px;
   left: -67.5px;
 }
@@ -79,13 +101,49 @@
   margin-bottom: -11.25px;
 }
 
+@media only screen and (max-width: 768px) {
+  #audio-start {
+    top: 0;
+    left: 50%;
+    margin-left: -67.5px;
+  }
+  #audio-pause {
+    left: 50%;
+    margin-bottom: -22.5px;
+  }
+}
+
+.tune-text {
+  position: absolute;
+  text-align: center;
+  width: 100%;
+  font-family: 'Open Sans Condensed';
+  font-weight: bold;
+  font-size: 1.6vw;
+  color: rgb(67,111,142);
+  transition: transform 350ms ease;
+}
+
+#tune-up-text { 
+  top: .5vw; 
+  transform: translateY(-3vw);
+}
+
+#tune-down-text { 
+  bottom: .5vw; 
+  transform: translateY(3vw);
+}
+
+.tune-text.show {
+  transform: translateY(0)!important;
+}
+
 .audio-button {
-  background: #fff!important;
+  background: #fbfbfb;
   z-index: 10;
   position: absolute;
   margin: 0 auto;
   padding: 0;
-  background: none;
   border: none;
   cursor: pointer;
   outline: none;
@@ -94,28 +152,52 @@
   /* margin-bottom: 20px; */
 }
 
-#tune-up-box {
+.square-ratio {
   position: relative;
+}
+.square-ratio::before {
+  content: "";
+  width: 1px;
+  margin-left: -1px;
+  float: left;
+  height: 0;
+  padding-top: 100%;
+}
+.square-ratio::after { /* to clear float */
+  content: "";
+  display: table;
+  clear: both;
+}
+
+#tune-up-box {
+  position: absolute;
+  border: .2vw solid rgb(67,111,142);
+  background: #fbfbfb;
+  border-radius: 25px;
+  width: 100%;
   height: 100%;
   overflow: hidden;
-  border: .175vw solid rgb(67,111,142);
-  border-radius: 25px;
-  /* margin-left: -5vw;
-  margin-right: -5vw;
-  -webkit-mask-image: -webkit-linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  );
-  mask-image: linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  ); */
+}
+
+@media only screen and (max-width: 1024px) {
+  #tune-up-box {
+    border: .3vw solid rgb(67,111,142);
+  }
+}
+
+@media only screen and (max-width: 768px) {
+  #tune-up-box {
+    border: .7vw solid rgb(67,111,142);
+  }
+  .square-ratio {
+    margin-top: -15vw;
+  }
+}
+
+@media only screen and (min-aspect-ratio: 21/9) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
+  }
 }
 
 .tuners-privacy-box {
@@ -131,91 +213,6 @@
   color: rgb(67,111,142);
 }
 
-/* #pitch-wheel {
-  font-family: 'Open Sans Condensed';
-  font-weight: bold;
-  width: 100%;
-  margin-left: 0;
-  height: 32vw;
-  overflow: hidden;
-  margin-top: 30px;
-  contain: content;
-  padding: 0 5vw;
-
-  -webkit-user-select: none;
-  -moz-user-select: none;
-  user-select: none;
-
-  -webkit-mask-image: -webkit-linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  );
-  mask-image: linear-gradient(
-    left,
-    rgba(255, 255, 255, 0) 5%,
-    #fff 25%,
-    #fff 75%,
-    rgba(255, 255, 255, 0) 95%
-  );
-}
-
-@media only screen and (max-width: 1024px) {
-  #pitch-wheel {
-    height: 38vw;
-    padding: 0;
-  }
-}
-
-#pitch-wheel-needle {
-  position: absolute;
-  left: 0;
-  right: 0;
-  margin: auto;
-  width: 0;
-  height: 3vw;
-  border-left: 3vw solid transparent;
-  border-right: 3vw solid transparent;
-  border-top: 3vw solid rgb(67,111,142);
-}
-
-#pitch-wheel-needle.active {
-  border-top-color: #e25c1b;
-}
-
-#pitch-wheel-svg {
-  width: 200%; 
-  margin-left: -50%; 
-  transform: rotate(-1035deg);
-  transform-origin: center center;
-}
-
-#pitch-detector {
-  position: relative;
-  margin-bottom: 20px;
-}
-
-#pitch-audio-start {
-  position: relative;
-  min-height: 150px;
-  margin-bottom: 20px;
-}
-
-.audio-button {
-  margin: 0 auto;
-  padding: 0;
-  background: none;
-  border: none;
-  cursor: pointer;
-  position: relative;
-  outline: none;
-  transition: transform 1s ease;
-  margin-bottom: 20px;
-}
-
-*/
 .shrink-animation, .blob-animation {
   transform-origin: center center;
   animation-duration: 125ms;
@@ -229,52 +226,6 @@
 .blob-animation {
   animation-name: blob-animation;
 }
-/*
-#audio-start {
-  width: 135px;
-  height: 135px;
-}
-
-#audio-pause {
-  width: 45px;
-  height: 45px;
-  display: none;
-}
-
-#pitch-freq {
-  font-family: 'Open Sans Condensed'; 
-  font-weight: bold; 
-  text-align: center; 
-  position: relative; 
-  min-height: 150px;
-  max-width: 500px;
-  margin: auto;
-  padding: 0 1vw;
-  top: -12.5vw; 
-  color: rgb(67,111,142);
-}
-
-@media only screen and (min-aspect-ratio: 21/9) {
-  #pitch-wheel {
-    padding: 0 10vw;
-  }
-  #pitch-freq {
-    top: -16.5vw;
-  }
-}
-
-#pitch-freq-text {
-  display: none;
-  font-size: 50px; 
-  line-height: 50px;
-  padding: 25px 0;
-  contain: content;
-}
-
-#pitch-freq-text + div {
-  margin-top: 25px;
-}
-*/
 
 .shockwave {
   position: absolute;
