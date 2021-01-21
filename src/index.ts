@@ -61,19 +61,21 @@ const closest = (a: number[], goal: number) => a.reduce((prev, curr) =>
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
+if (false
+  || !('WebAssembly' in window) 
+  || !('AudioContext' in window) 
+  || !('createAnalyser' in AudioContext.prototype) 
+  || !('createScriptProcessor' in AudioContext.prototype) 
+) {
+  if (!('WebAssembly' in window)) throw alert(`Browser not supported: 'WebAssembly' is not defined`);
+  if (!('AudioContext' in window)) throw alert(`Browser not supported: 'AudioContext' is not defined`)
+  if (!('createAnalyser' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createAnalyser' is not defined`)
+  if (!('createScriptProcessor' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createScriptProcessor' is not defined`)
+}
+
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
   initGetUserMedia();
-
-  if (
-    !('WebAssembly' in window) ||
-    !('AudioContext' in window) ||
-    !('createAnalyser' in AudioContext.prototype) ||
-    !('createScriptProcessor' in AudioContext.prototype) ||
-    !('trunc' in Math)
-  ) {
-    return alert('Browser not supported');
-  }
 
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
