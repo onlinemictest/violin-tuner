@@ -80,6 +80,8 @@ Aubio().then(({ Pitch }) => {
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement;
   const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement;
   const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement;
+  const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement
+  const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement;
@@ -102,9 +104,6 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  const initText = matchCircleR.innerText;
-
-
   pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
@@ -113,10 +112,11 @@ Aubio().then(({ Pitch }) => {
 
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
-    matchCircleL.style.transform = `translateX(125%)`;
-    matchCircleR.innerText = initText;
+    pressPlay.style.display = 'inline';
+    pluckAString.style.display = 'none';
     matchCircleR.classList.add('with-text');
     matchCircleR.style.color = '';
+    matchCircleL.style.transform = `translateX(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     // freqTextEl.style.display = 'none';
@@ -139,7 +139,8 @@ Aubio().then(({ Pitch }) => {
 
       startEl.style.display = 'none';
       pauseEl.style.display = 'block';
-      matchCircleR.innerText = 'Pluck a String';
+      pressPlay.style.display = 'none';
+      pluckAString.style.display = 'inline';
       matchCircleR.classList.add('with-text');
       // freqTextEl.style.display = 'block';
       // if (block2) block2.style.display = 'none';
@@ -180,7 +181,8 @@ Aubio().then(({ Pitch }) => {
           // If there has been nothing but noise for the last couple of seconds, show the message again:
           if (resetable) {
             resetable = false;
-            matchCircleR.innerText = 'Pluck a String';
+            pressPlay.style.display = 'none';
+            pluckAString.style.display = 'inline';
             matchCircleR.classList.add('with-text');
             matchCircleR.style.color = '';
             matchCircleL.style.transform = `translateX(125%)`;
