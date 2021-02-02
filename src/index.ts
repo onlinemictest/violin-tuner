@@ -61,6 +61,7 @@ const closest = (a: number[], goal: number) => a.reduce((prev, curr) =>
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
+initGetUserMedia();
 if (false
   || !('WebAssembly' in window) 
   || !('AudioContext' in window) 
@@ -75,8 +76,6 @@ if (false
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
-  initGetUserMedia();
-
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
   const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement | null;
