@@ -161,7 +161,7 @@ Aubio().then(({ Pitch }) => {
       // let prevNote = '';
 
       let resetable = false;
-      let softResetable = false;
+      let softResettable = false;
       let jinglePlayed = false;
 
       /** The last 3 notes excluding undefined */
@@ -204,7 +204,7 @@ Aubio().then(({ Pitch }) => {
         else if (note.name && !Number.isNaN(note.cents)) {
           if (tunedJingle.paused) {
             resetable = true;
-            softResetable = true;
+            softResettable = true;
 
             const noteName = `${note.name}_${note.octave}`;
             const guitarNoteName = getClosestGuitarNote(frequency);
@@ -276,11 +276,11 @@ Aubio().then(({ Pitch }) => {
 
           queue(prevNotes, note.name);
         }
-        else if (softResetable) {
+        else if (softResettable) {
           // console.log('soft reset');
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
-          softResetable = false;
+          softResettable = false;
           jinglePlayed = false;
           centsBufferMap = new Map(GUITAR_NOTES.map(nn => [nn, []]));
         }
