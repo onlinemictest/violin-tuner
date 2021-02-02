@@ -76,6 +76,7 @@ if (false
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
+  const guitarTuner = document.getElementById('guitar-tuner') as HTMLDivElement | null;
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
   const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement | null;
@@ -94,6 +95,7 @@ Aubio().then(({ Pitch }) => {
   const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
   if (false
+    || !guitarTuner
     || !startEl
     || !pauseEl
     || !tuneUpText
@@ -135,7 +137,13 @@ Aubio().then(({ Pitch }) => {
     toggleClass(startEl, 'blob-animation');
   })
 
-  startEl.addEventListener('click', () => {
+  startEl.addEventListener('click', async () => {
+    guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    await new Promise(r => setTimeout(r, 0));
+    startEl.style.display = 'none';
+    pauseEl.style.display = 'block';
+    toggleClass(pauseEl, 'shrink-animation');
+
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
@@ -148,12 +156,8 @@ Aubio().then(({ Pitch }) => {
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
 
-      startEl.style.display = 'none';
-      pauseEl.style.display = 'block';
       pressPlay.style.display = 'none';
       pluckAString.style.display = 'inline';
-      toggleClass(pauseEl, 'shrink-animation');
-
       matchCircleL.style.visibility = 'visible';
 
       // let prevCents = -50;
