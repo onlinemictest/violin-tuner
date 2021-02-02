@@ -1,4 +1,4 @@
-@media only screen and (max-width: 768px) { .xs-dis-block { display: block } }
+@media only screen and (max-width: 425px) { .xs-dis-block { display: block } }
 
 #guitar-tuner {
   margin: 30px 0;
@@ -14,7 +14,7 @@
   padding-right: 5.5vw;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #guitar-tuner {
     margin-top: 0;
     padding-left: 12.5vw;
@@ -22,6 +22,12 @@
   }
   #guitar-tuner-img {
     padding-right: 0;
+  }
+}
+
+@media only screen and (min-aspect-ratio: 21/9) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
   }
 }
 
@@ -85,7 +91,7 @@
   display: none;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #match-circle-r.with-text {
     font-size: 8.5vw;
   }
@@ -110,7 +116,7 @@
   margin-bottom: -11.25px;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #audio-start {
     top: 0;
     left: 50%;
@@ -194,18 +200,12 @@
   }
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #tune-up-box {
     border: .7vw solid rgb(67,111,142);
   }
   .square-ratio {
     margin-top: -15vw;
-  }
-}
-
-@media only screen and (min-aspect-ratio: 21/9) {
-  #guitar-tuner {
-    padding: 0 8.5vw;
   }
 }
 
