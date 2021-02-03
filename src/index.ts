@@ -42,6 +42,11 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
 const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
+const translate = {
+  X: 'translateX',
+  Y: 'translateY',
+}
+
 // Helper fns
 const set = (obj: any, prop: any, value: any) => obj && (obj[prop] = value);
 const isTruthy = (x: any) => !!x;
@@ -119,6 +124,8 @@ Aubio().then(({ Pitch }) => {
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
+  matchCircleL.style.transform = `${translate.X}(125%)`;
+
   pauseEl.addEventListener('click', () => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
@@ -131,7 +138,7 @@ Aubio().then(({ Pitch }) => {
     pluckAString.style.display = 'none';
     noteSpan.style.display = 'none';
     matchCircleR.style.color = '';
-    matchCircleL.style.transform = `translateX(125%)`;
+    matchCircleL.style.transform = `${translate.X}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     toggleClass(startEl, 'blob-animation');
@@ -199,7 +206,7 @@ Aubio().then(({ Pitch }) => {
             pluckAString.style.display = 'inline';
             noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
-            matchCircleL.style.transform = `translateX(125%)`;
+            matchCircleL.style.transform = `${translate.X}(125%)`;
             tuneUpText.classList.remove('show');
             tuneDownText.classList.remove('show');
           }
@@ -245,7 +252,7 @@ Aubio().then(({ Pitch }) => {
             // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
             // console.log(transitionTime)
 
-            // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+            // matchCircleR.style.transform = `translateY(${note.cents}%)`;
             pluckAString.style.display = 'none';
             noteSpan.style.display = 'inline';
             noteSpan.innerText = guitarNoteName.split('_')[0];
@@ -262,7 +269,7 @@ Aubio().then(({ Pitch }) => {
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
             matchCircleL.style.transition = `transform 350ms ease`;
-            matchCircleL.style.transform = `translateX(${centsUI * (1 - tuneRatio)}%)`;
+            matchCircleL.style.transform = `${translate.X}(${centsUI * (1 - tuneRatio)}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
               tunedJingle.play();
