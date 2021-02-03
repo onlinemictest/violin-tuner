@@ -20,6 +20,9 @@ import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
+import { closest, queue } from "./array-fns";
+import { isTruthy, set, throwError } from "./helper-fns";
+import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
@@ -46,23 +49,6 @@ const translate = {
   X: 'translateX',
   Y: 'translateY',
 }
-
-// Helper fns
-const set = (obj: any, prop: any, value: any) => obj && (obj[prop] = value);
-const isTruthy = (x: any) => !!x;
-const isFalsey = (x: any) => !x;
-
-// Math fns
-// const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
-// const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
-const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
-const clamp = (n: number) => Math.max(0, Math.min(1, n));
-
-// Array fns
-const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
-const throwError = (m?: string) => { throw Error(m) };
-const closest = (a: number[], goal: number) => a.reduce((prev, curr) =>
-  (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
