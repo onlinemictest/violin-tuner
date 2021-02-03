@@ -79,22 +79,16 @@
 }
 
 #circle-text-note {
-  font-size: 10vw;
+  font-size: 10em;
 }
 
 #circle-text-play, #circle-text-pluck {
-  font-size: 2.5vw;
+  font-size: 2.5em;
   color: rgb(67,111,142);
 }
 
 #circle-text-pluck { 
   display: none;
-}
-
-@media only screen and (max-width: 425px) {
-  #match-circle-r.with-text {
-    font-size: 8.5vw;
-  }
 }
 
 #audio-start {
@@ -134,19 +128,19 @@
   width: 100%;
   font-family: 'Open Sans Condensed';
   font-weight: bold;
-  font-size: 1.6vw;
+  font-size: 1.6em;
   color: rgb(67,111,142);
   transition: transform 350ms ease;
 }
 
 #tune-up-text { 
-  top: .5vw; 
-  transform: translateY(-3vw);
+  top: 0; 
+  transform: translateY(-100%);
 }
 
 #tune-down-text { 
-  bottom: .5vw; 
-  transform: translateY(3vw);
+  bottom: 0; 
+  transform: translateY(100%);
 }
 
 .tune-text.show {
@@ -187,6 +181,7 @@
 #tune-up-box {
   position: absolute;
   border: .2vw solid rgb(67,111,142);
+  font-size: 1vw;
   background: #fbfbfb;
   border-radius: 25px;
   width: 100%;
@@ -197,12 +192,14 @@
 @media only screen and (max-width: 1024px) {
   #tune-up-box {
     border: .3vw solid rgb(67,111,142);
+    font-size: 1.5vw;
   }
 }
 
 @media only screen and (max-width: 425px) {
   #tune-up-box {
     border: .7vw solid rgb(67,111,142);
+    font-size: 3vw;
   }
   .square-ratio {
     margin-top: -15vw;
