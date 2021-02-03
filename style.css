@@ -123,6 +123,16 @@
   }
 }
 
+#needle {
+  position: absolute;
+  top: 50%;
+  left: -1vw;
+  margin-top: -3vw;
+  border-top: 3vw solid transparent;
+  border-bottom: 3vw solid transparent;
+  border-left: 3vw solid rgb(67,111,142);
+}
+
 .tune-text {
   position: absolute;
   text-align: center;
