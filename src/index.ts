@@ -21,7 +21,7 @@ import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
 import { closest, queue } from "./array-fns";
-import { isTruthy, set, throwError } from "./helper-fns";
+import { isTruthy, set, throttle, throwError } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
@@ -41,8 +41,9 @@ const GUITAR_FREQ = {
   'A_2': 110.00,
   'E_2': 82.41,
 };
-const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
-const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
+type GuitarNoteName = keyof typeof GUITAR_FREQ;
+const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
+const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
 const translate = {
@@ -53,6 +54,7 @@ const translate = {
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
 initGetUserMedia();
+
 if (false
   || !('WebAssembly' in window) 
   || !('AudioContext' in window) 
@@ -103,6 +105,16 @@ Aubio().then(({ Pitch }) => {
   ) {
     return alert('Expected HTML element missing');
   }
+
+  const updateTuneText = throttle(500, (isTooLow: boolean, isClose: boolean) => {
+    if (isClose) {
+      tuneUpText.classList.remove('show');
+      tuneDownText.classList.remove('show');
+    } else {
+      tuneUpText.classList[isTooLow ? 'add' : 'remove']('show');
+      tuneDownText.classList[isTooLow ? 'remove' : 'add']('show');
+    }
+  });
 
   let audioContext: AudioContext;
   let analyser: AnalyserNode;
@@ -207,13 +219,8 @@ Aubio().then(({ Pitch }) => {
 
             // Show tune up/down text iff frequency is way off (more than 25 cents)
             const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
-            if (noteName === guitarNoteName && note.cents < 25) {
-              tuneUpText.classList.remove('show');
-              tuneDownText.classList.remove('show');
-            } else {
-              tuneUpText.classList[isTooLow ? 'add' : 'remove']('show');
-              tuneDownText.classList[isTooLow ? 'remove' : 'add']('show');
-            }
+            const isClose = noteName === guitarNoteName && note.cents < 5;
+            updateTuneText(isTooLow, isClose);
 
             // console.log(note);
 
