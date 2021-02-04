@@ -20,6 +20,9 @@ import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
+import { closest, queue } from "./array-fns";
+import { isTruthy, set, throttle, throwError } from "./helper-fns";
+import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
@@ -38,28 +41,21 @@ const GUITAR_FREQ = {
   'A_2': 110.00,
   'E_2': 82.41,
 };
-const GUITAR_NOTES = Object.keys(GUITAR_FREQ);
-const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, keyof (typeof GUITAR_FREQ)>
+type GuitarNoteName = keyof typeof GUITAR_FREQ;
+const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
+const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
-// Helper fns
-const set = (obj: any, prop: any, value: any) => obj && (obj[prop] = value);
-const isTruthy = (x: any) => !!x;
-const isFalsey = (x: any) => !x;
+const ANIM_DURATION = 350;
 
-// Math fns
-// const floor = (n: number, basis = 1) => Math.floor(n / basis) * basis;
-// const ceil = (n: number, basis = 1) => Math.ceil(n / basis) * basis;
-const round = (n: number, basis = 1) => Math.round(n / basis) * basis;
-const clamp = (n: number) => Math.max(0, Math.min(1, n));
-
-// Array fns
-const queue = <T>(a: T[] | null | undefined, x: T) => (a?.pop(), a?.unshift(x), a);
-const throwError = (m?: string) => { throw Error(m) };
-const closest = (a: number[], goal: number) => a.reduce((prev, curr) =>
-  (Math.abs(curr - goal) < Math.abs(prev - goal) ? curr : prev));
+const translate = {
+  X: 'translateX',
+  Y: 'translateY',
+}
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
+
+initGetUserMedia();
 
 if (false
   || !('WebAssembly' in window) 
@@ -75,14 +71,14 @@ if (false
 
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
-  initGetUserMedia();
-
+  const guitarTuner = document.getElementById('guitar-tuner') as HTMLDivElement | null;
   const startEl = document.getElementById('audio-start') as HTMLButtonElement | null;
   const pauseEl = document.getElementById('audio-pause') as HTMLButtonElement | null;
   const tuneUpText = document.getElementById('tune-up-text') as HTMLDivElement | null;
   const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement | null;
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
+  const errorEl = document.getElementById('circle-text-error') as HTMLSpanElement | null;
   const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
@@ -95,12 +91,14 @@ Aubio().then(({ Pitch }) => {
   const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
   if (false
+    || !guitarTuner
     || !startEl
     || !pauseEl
     || !tuneUpText
     || !tuneDownText
     || !pressPlay
     || !pluckAString
+    || !errorEl
     || !noteSpan
     || !matchCircleL
     || !matchCircleR
@@ -112,56 +110,76 @@ Aubio().then(({ Pitch }) => {
     return alert('Expected HTML element missing');
   }
 
+  const updateTuneText = throttle(500, (isTooLow: boolean, isClose: boolean) => {
+    if (isClose) {
+      tuneUpText.classList.remove('show');
+      tuneDownText.classList.remove('show');
+    } else {
+      tuneUpText.classList[isTooLow ? 'add' : 'remove']('show');
+      tuneDownText.classList[isTooLow ? 'remove' : 'add']('show');
+    }
+  });
+
   let audioContext: AudioContext;
   let analyser: AnalyserNode;
   let scriptProcessor: ScriptProcessorNode;
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  pauseEl.addEventListener('click', () => {
-    scriptProcessor.disconnect(audioContext.destination);
-    analyser.disconnect(scriptProcessor);
-    audioContext.close();
-    // stream.getTracks().forEach(track => track.stop());
+  matchCircleL.style.transform = `${translate.Y}(125%)`;
 
+  const pauseCallback = () => {
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
     pressPlay.style.display = 'inline';
     pluckAString.style.display = 'none';
     noteSpan.style.display = 'none';
     matchCircleR.style.color = '';
-    matchCircleL.style.transform = `translateX(125%)`;
+    matchCircleL.style.transform = `${translate.Y}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     toggleClass(startEl, 'blob-animation');
-  })
+  };
 
-  startEl.addEventListener('click', () => {
+  pauseEl.addEventListener('click', () => {
+    scriptProcessor.disconnect(audioContext.destination);
+    analyser.disconnect(scriptProcessor);
+    audioContext.close();
+    // stream.getTracks().forEach(track => track.stop());
+    pauseCallback();
+  });
+
+  startEl.addEventListener('click', async () => {
+    guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
+    startEl.style.display = 'none';
+    pauseEl.style.display = 'block';
+    toggleClass(pauseEl, 'shrink-animation');
+    await new Promise(r => requestAnimationFrame(r));
+
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
     // pitchDetector.setSilence(-70);
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(stream);
       // stream = s;
       audioContext.createMediaStreamSource(stream).connect(analyser);
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
 
-      startEl.style.display = 'none';
-      pauseEl.style.display = 'block';
       pressPlay.style.display = 'none';
+      errorEl.style.display = 'none';
       pluckAString.style.display = 'inline';
-      toggleClass(pauseEl, 'shrink-animation');
-
       matchCircleL.style.visibility = 'visible';
 
       // let prevCents = -50;
       // let prevNote = '';
 
       let resetable = false;
-      let softResetable = false;
+      let softResettable = false;
       let jinglePlayed = false;
 
       /** The last 3 notes excluding undefined */
@@ -196,7 +214,7 @@ Aubio().then(({ Pitch }) => {
             pluckAString.style.display = 'inline';
             noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
-            matchCircleL.style.transform = `translateX(125%)`;
+            matchCircleL.style.transform = `${translate.Y}(125%)`;
             tuneUpText.classList.remove('show');
             tuneDownText.classList.remove('show');
           }
@@ -204,20 +222,15 @@ Aubio().then(({ Pitch }) => {
         else if (note.name && !Number.isNaN(note.cents)) {
           if (tunedJingle.paused) {
             resetable = true;
-            softResetable = true;
+            softResettable = true;
 
             const noteName = `${note.name}_${note.octave}`;
             const guitarNoteName = getClosestGuitarNote(frequency);
 
             // Show tune up/down text iff frequency is way off (more than 25 cents)
             const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
-            if (noteName === guitarNoteName && note.cents < 25) {
-              tuneUpText.classList.remove('show');
-              tuneDownText.classList.remove('show');
-            } else {
-              tuneUpText.classList[isTooLow ? 'add' : 'remove']('show');
-              tuneDownText.classList[isTooLow ? 'remove' : 'add']('show');
-            }
+            const isClose = noteName === guitarNoteName && note.cents < 5;
+            updateTuneText(isTooLow, isClose);
 
             // console.log(note);
 
@@ -242,7 +255,7 @@ Aubio().then(({ Pitch }) => {
             // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
             // console.log(transitionTime)
 
-            // matchCircleR.style.transform = `translateX(${note.cents}%)`;
+            // matchCircleR.style.transform = `translateY(${note.cents}%)`;
             pluckAString.style.display = 'none';
             noteSpan.style.display = 'inline';
             noteSpan.innerText = guitarNoteName.split('_')[0];
@@ -250,19 +263,19 @@ Aubio().then(({ Pitch }) => {
             const centsBuffer = centsBufferMap.get(noteName) ?? [];
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
-            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE);
+            const tuneRatio = clamp((centsBuffer.length - 1) / TUNE_BUFFER_SIZE);
             // console.log(noteName, tuneRatio)
-            innerCircle.style.transition = `transform 350ms ease`
+            innerCircle.style.transition = `transform ${ANIM_DURATION}ms ease`
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
-            matchCircleR.style.transition = `color 350ms ease`
+            matchCircleR.style.transition = `color ${ANIM_DURATION}ms ease`
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
-            matchCircleL.style.transition = `transform 350ms ease`;
-            matchCircleL.style.transform = `translateX(${centsUI * (1 - tuneRatio)}%)`;
+            matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
+            matchCircleL.style.transform = `${translate.Y}(${-centsUI * (1 - tuneRatio)}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              tunedJingle.play();
+              setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayed = true;
@@ -276,11 +289,11 @@ Aubio().then(({ Pitch }) => {
 
           queue(prevNotes, note.name);
         }
-        else if (softResetable) {
+        else if (softResettable) {
           // console.log('soft reset');
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
-          softResetable = false;
+          softResettable = false;
           jinglePlayed = false;
           centsBufferMap = new Map(GUITAR_NOTES.map(nn => [nn, []]));
         }
@@ -288,6 +301,11 @@ Aubio().then(({ Pitch }) => {
         // // console.log(pauseBuffer)
         // queue(pauseBuffer, note.name);
       });
-    });
+    } catch (err) {
+      pauseCallback();
+      pressPlay.style.display = 'none';
+      errorEl.innerText = err.message;
+      errorEl.style.display = 'block';
+    };
   });
 });

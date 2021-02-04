@@ -1,7 +1,8 @@
-@media only screen and (max-width: 768px) { .xs-dis-block { display: block } }
+@media only screen and (max-width: 425px) { .xs-dis-block { display: block } }
+@media only screen and (max-width: 425px) { .wid-xxs-100 { width: 100%!important } }
 
 #guitar-tuner {
-  margin: 30px 0;
+  margin: 30px 0 60px;
 
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -12,16 +13,31 @@
   width: 100%;
   height: 100%;
   padding-right: 5.5vw;
+  display: flex;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #guitar-tuner {
     margin-top: 0;
+    padding-left: 12.5vw;
+    padding-right: 12.5vw;
   }
   #guitar-tuner-img {
     padding-right: 0;
   }
 }
+
+@media only screen and (min-width: 1680px) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
+  }
+}
+
+/* @media only screen and (min-aspect-ratio: 21/9) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
+  }
+} */
 
 [id$="-fill"] { 
   display: none;
@@ -36,28 +52,40 @@
   left: 50%;
   margin-top: -35%;
   margin-left: -35%;
-  /* transition: transform 200ms ease; */
   text-align: center;
   font-family: 'Open Sans Condensed';
   font-weight: bold;
   transform-origin: center center;
 }
 
+.note-shape::before {
+  content: '';
+  width: 100%;
+  height: 100%;
+  border-radius: 100%;
+  position: absolute;
+  top: 0;
+  left: 0;
+  transform: scale(1.15) rotateZ(70deg) scaleX(0.75);
+}
+
 #match-circle-l {
-  background: #e25d1b;
-  /* background: #e25d1b7c; */
   transform: translateX(125%);
 }
 
+#match-circle-l:not(.note-shape), #match-circle-l.note-shape::before {
+  background: #e25d1b;
+  /* background: #e25d1b7c; */
+}
+
 #match-circle-r {
-  background: rgba(67, 111, 142, 0.125);
   display: flex;
   align-items: center;
   justify-content: center;
-  /* background: rgba(0, 0, 0, 0.15); */
-  /* background: #cae1ff77; */
-  /* background: #cae1ff; */
-  /* transform: translateX(9.5vw); */
+}
+
+#match-circle-r:not(.note-shape), #match-circle-r.note-shape::before {
+  background: rgba(67, 111, 142, 0.175);
 }
 
 #inner-circle {
@@ -67,26 +95,32 @@
   left: 0;
   right: 0;
   bottom: 0;
+}
+
+#inner-circle:not(.note-shape), 
+#inner-circle.note-shape::before {
   background: rgba(0, 0, 0, 0.125);
 }
 
-#circle-text-note {
-  font-size: 10vw;
-}
-
-#circle-text-play, #circle-text-pluck {
-  font-size: 2.5vw;
+[id^="circle-text-"] {
+  display: none;
+  position: relative;
+  z-index: 2;
+  font-size: 2.5em;
   color: rgb(67,111,142);
 }
 
-#circle-text-pluck { 
-  display: none;
+#circle-text-note {
+  font-size: 10em;
 }
 
-@media only screen and (max-width: 768px) {
-  #match-circle-r.with-text {
-    font-size: 8.5vw;
-  }
+#circle-text-error {
+  color: indianred;
+  font-size: 1rem;
+}
+
+#circle-text-play { 
+  display: inline;
 }
 
 #audio-start {
@@ -108,7 +142,7 @@
   margin-bottom: -11.25px;
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #audio-start {
     top: 0;
     left: 50%;
@@ -120,25 +154,40 @@
   }
 }
 
+#needle {
+  position: absolute;
+  top: 50%;
+  left: -1.5vw;
+  margin-top: -3vw;
+  border-top: 3vw solid transparent;
+  border-bottom: 3vw solid transparent;
+  border-left: 3vw solid rgb(67,111,142);
+}
+@media only screen and (max-width: 425px) {
+  #needle {
+    left: 0;
+  }
+}
+
 .tune-text {
   position: absolute;
   text-align: center;
   width: 100%;
   font-family: 'Open Sans Condensed';
   font-weight: bold;
-  font-size: 1.6vw;
+  font-size: 1.6em;
   color: rgb(67,111,142);
   transition: transform 350ms ease;
 }
 
 #tune-up-text { 
-  top: .5vw; 
-  transform: translateY(-3vw);
+  top: 0; 
+  transform: translateY(-100%);
 }
 
 #tune-down-text { 
-  bottom: .5vw; 
-  transform: translateY(3vw);
+  bottom: 0; 
+  transform: translateY(100%);
 }
 
 .tune-text.show {
@@ -178,7 +227,8 @@
 
 #tune-up-box {
   position: absolute;
-  border: .2vw solid rgb(67,111,142);
+  border: .15vw solid rgb(67,111,142);
+  font-size: 1vw;
   background: #fbfbfb;
   border-radius: 25px;
   width: 100%;
@@ -188,22 +238,18 @@
 
 @media only screen and (max-width: 1024px) {
   #tune-up-box {
-    border: .3vw solid rgb(67,111,142);
+    border: .2vw solid rgb(67,111,142);
+    font-size: 1.5vw;
   }
 }
 
-@media only screen and (max-width: 768px) {
+@media only screen and (max-width: 425px) {
   #tune-up-box {
-    border: .7vw solid rgb(67,111,142);
+    border: .4vw solid rgb(67,111,142);
+    font-size: 3vw;
   }
   .square-ratio {
     margin-top: -15vw;
-  }
-}
-
-@media only screen and (min-aspect-ratio: 21/9) {
-  #guitar-tuner {
-    padding: 0 8.5vw;
   }
 }
 
