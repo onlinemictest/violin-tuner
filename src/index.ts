@@ -46,6 +46,8 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
 const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
+const ANIM_DURATION = 350;
+
 const translate = {
   X: 'translateX',
   Y: 'translateY',
@@ -253,19 +255,19 @@ Aubio().then(({ Pitch }) => {
             const centsBuffer = centsBufferMap.get(noteName) ?? [];
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
-            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE);
+            const tuneRatio = clamp((centsBuffer.length - 1) / TUNE_BUFFER_SIZE);
             // console.log(noteName, tuneRatio)
-            innerCircle.style.transition = `transform 350ms ease`
+            innerCircle.style.transition = `transform ${ANIM_DURATION}ms ease`
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
-            matchCircleR.style.transition = `color 350ms ease`
+            matchCircleR.style.transition = `color ${ANIM_DURATION}ms ease`
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
-            matchCircleL.style.transition = `transform 350ms ease`;
+            matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
             matchCircleL.style.transform = `${translate.Y}(${-centsUI * (1 - tuneRatio)}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              tunedJingle.play();
+              setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayed = true;
