@@ -2,7 +2,7 @@
 @media only screen and (max-width: 425px) { .wid-xxs-100 { width: 100%!important } }
 
 #guitar-tuner {
-  margin: 30px 0;
+  margin: 30px 0 60px;
 
   -webkit-user-select: none;
   -moz-user-select: none;
@@ -13,6 +13,7 @@
   width: 100%;
   height: 100%;
   padding-right: 5.5vw;
+  display: flex;
 }
 
 @media only screen and (max-width: 425px) {
@@ -26,11 +27,17 @@
   }
 }
 
-@media only screen and (min-aspect-ratio: 21/9) {
+@media only screen and (min-width: 1680px) {
   #guitar-tuner {
     padding: 0 8.5vw;
   }
 }
+
+/* @media only screen and (min-aspect-ratio: 21/9) {
+  #guitar-tuner {
+    padding: 0 8.5vw;
+  }
+} */
 
 [id$="-fill"] { 
   display: none;
@@ -217,7 +224,7 @@
 
 #tune-up-box {
   position: absolute;
-  border: .2vw solid rgb(67,111,142);
+  border: .15vw solid rgb(67,111,142);
   font-size: 1vw;
   background: #fbfbfb;
   border-radius: 25px;
@@ -228,14 +235,14 @@
 
 @media only screen and (max-width: 1024px) {
   #tune-up-box {
-    border: .3vw solid rgb(67,111,142);
+    border: .2vw solid rgb(67,111,142);
     font-size: 1.5vw;
   }
 }
 
 @media only screen and (max-width: 425px) {
   #tune-up-box {
-    border: .7vw solid rgb(67,111,142);
+    border: .4vw solid rgb(67,111,142);
     font-size: 3vw;
   }
   .square-ratio {
