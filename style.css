@@ -103,21 +103,24 @@
 }
 
 [id^="circle-text-"] {
+  display: none;
   position: relative;
   z-index: 2;
+  font-size: 2.5em;
+  color: rgb(67,111,142);
 }
 
 #circle-text-note {
   font-size: 10em;
 }
 
-#circle-text-play, #circle-text-pluck {
-  font-size: 2.5em;
-  color: rgb(67,111,142);
+#circle-text-error {
+  color: indianred;
+  font-size: 1rem;
 }
 
-#circle-text-pluck { 
-  display: none;
+#circle-text-play { 
+  display: inline;
 }
 
 #audio-start {

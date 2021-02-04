@@ -78,6 +78,7 @@ Aubio().then(({ Pitch }) => {
   const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement | null;
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
+  const errorEl = document.getElementById('circle-text-error') as HTMLSpanElement | null;
   const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
@@ -97,6 +98,7 @@ Aubio().then(({ Pitch }) => {
     || !tuneDownText
     || !pressPlay
     || !pluckAString
+    || !errorEl
     || !noteSpan
     || !matchCircleL
     || !matchCircleR
@@ -126,12 +128,7 @@ Aubio().then(({ Pitch }) => {
 
   matchCircleL.style.transform = `${translate.Y}(125%)`;
 
-  pauseEl.addEventListener('click', () => {
-    scriptProcessor.disconnect(audioContext.destination);
-    analyser.disconnect(scriptProcessor);
-    audioContext.close();
-    // stream.getTracks().forEach(track => track.stop());
-
+  const pauseCallback = () => {
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
     pressPlay.style.display = 'inline';
@@ -142,14 +139,22 @@ Aubio().then(({ Pitch }) => {
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     toggleClass(startEl, 'blob-animation');
-  })
+  };
+
+  pauseEl.addEventListener('click', () => {
+    scriptProcessor.disconnect(audioContext.destination);
+    analyser.disconnect(scriptProcessor);
+    audioContext.close();
+    // stream.getTracks().forEach(track => track.stop());
+    pauseCallback();
+  });
 
   startEl.addEventListener('click', async () => {
     guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    await new Promise(r => setTimeout(r, 0));
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
     toggleClass(pauseEl, 'shrink-animation');
+    await new Promise(r => requestAnimationFrame(r));
 
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
@@ -157,13 +162,16 @@ Aubio().then(({ Pitch }) => {
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
     // pitchDetector.setSilence(-70);
 
-    navigator.mediaDevices.getUserMedia({ audio: true }).then(stream => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      console.log(stream);
       // stream = s;
       audioContext.createMediaStreamSource(stream).connect(analyser);
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
 
       pressPlay.style.display = 'none';
+      errorEl.style.display = 'none';
       pluckAString.style.display = 'inline';
       matchCircleL.style.visibility = 'visible';
 
@@ -293,6 +301,11 @@ Aubio().then(({ Pitch }) => {
         // // console.log(pauseBuffer)
         // queue(pauseBuffer, note.name);
       });
-    });
+    } catch (err) {
+      pauseCallback();
+      pressPlay.style.display = 'none';
+      errorEl.innerText = err.message;
+      errorEl.style.display = 'block';
+    };
   });
 });
