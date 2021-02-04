@@ -79,7 +79,7 @@ Aubio().then(({ Pitch }) => {
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
   const errorEl = document.getElementById('circle-text-error') as HTMLSpanElement | null;
-  const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
+  const noteSpan = document.getElementById('circle-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
@@ -164,7 +164,7 @@ Aubio().then(({ Pitch }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log(stream);
+
       // stream = s;
       audioContext.createMediaStreamSource(stream).connect(analyser);
       analyser.connect(scriptProcessor);

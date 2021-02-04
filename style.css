@@ -70,7 +70,7 @@
 }
 
 #match-circle-l {
-  transform: translateX(125%);
+  transform: translateX(150%);
 }
 
 #match-circle-l:not(.note-shape), #match-circle-l.note-shape::before {
@@ -102,15 +102,18 @@
   background: rgba(0, 0, 0, 0.125);
 }
 
-[id^="circle-text-"] {
+[id^="circle-"] {
   display: none;
   position: relative;
   z-index: 2;
+}
+
+[id^="circle-text-"] {
   font-size: 2.5em;
   color: rgb(67,111,142);
 }
 
-#circle-text-note {
+#circle-note {
   font-size: 10em;
 }
 
