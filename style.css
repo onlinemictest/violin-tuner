@@ -157,19 +157,25 @@
   }
 }
 
-#needle {
+[id^='needle-'] {
   position: absolute;
   top: 50%;
-  left: -1.5vw;
   margin-top: -3vw;
   border-top: 3vw solid transparent;
   border-bottom: 3vw solid transparent;
-  border-left: 3vw solid rgb(67,111,142);
+  display: none;
+}
+#needle-l {
+  left: -1.5vw;
+  border-left: 3vw solid #fbfbfb;
+}
+#needle-r {
+  right: -1.5vw;
+  border-right: 3vw solid #fbfbfb;
 }
 @media only screen and (max-width: 425px) {
-  #needle {
-    left: 0;
-  }
+  #needle-l { left: 0 }
+  #needle-r { right: 0 }
 }
 
 .tune-text {
