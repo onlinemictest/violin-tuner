@@ -51,19 +51,17 @@ const ANIM_DURATION = 350;
 const translate = {
   X: 'translateX',
   Y: 'translateY',
-};
-let dir: keyof typeof translate;
-dir = 'X';
+}
 
 const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
 
 initGetUserMedia();
 
 if (false
-  || !('WebAssembly' in window)
-  || !('AudioContext' in window)
-  || !('createAnalyser' in AudioContext.prototype)
-  || !('createScriptProcessor' in AudioContext.prototype)
+  || !('WebAssembly' in window) 
+  || !('AudioContext' in window) 
+  || !('createAnalyser' in AudioContext.prototype) 
+  || !('createScriptProcessor' in AudioContext.prototype) 
 ) {
   if (!('WebAssembly' in window)) throw alert(`Browser not supported: 'WebAssembly' is not defined`);
   if (!('AudioContext' in window)) throw alert(`Browser not supported: 'AudioContext' is not defined`)
@@ -85,8 +83,6 @@ Aubio().then(({ Pitch }) => {
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
-  const needleL = document.getElementById('needle-l') as HTMLDivElement | null;
-  const needleR = document.getElementById('needle-r') as HTMLDivElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
   tunedJingle.volume = 0.5;
@@ -108,8 +104,6 @@ Aubio().then(({ Pitch }) => {
     || !matchCircleR
     || !innerCircle
     || !tunedJingle
-    || !needleL
-    || !needleR
     || ![...noteEls.values()].every(isTruthy)
     || ![...fillEls.values()].every(isTruthy)
   ) {
@@ -126,23 +120,13 @@ Aubio().then(({ Pitch }) => {
     }
   });
 
-  const updateNeedles = (isTooLow: boolean, isClose: boolean) => {
-    if (isClose) {
-      needleL.style.display = 'none';
-      needleR.style.display = 'none';
-    } else {
-      needleL.style.display = isTooLow ? 'block' : 'none';
-      needleR.style.display = isTooLow ? 'none' : 'block';
-    }
-  }
-
   let audioContext: AudioContext;
   let analyser: AnalyserNode;
   let scriptProcessor: ScriptProcessorNode;
   let pitchDetector: Aubio.Pitch;
   // let stream: MediaStream;
 
-  matchCircleL.style.transform = `${translate[dir]}(150%)`;
+  matchCircleL.style.transform = `${translate.Y}(125%)`;
 
   const pauseCallback = () => {
     startEl.style.display = 'block';
@@ -151,7 +135,7 @@ Aubio().then(({ Pitch }) => {
     pluckAString.style.display = 'none';
     noteSpan.style.display = 'none';
     matchCircleR.style.color = '';
-    matchCircleL.style.transform = `${translate[dir]}(150%)`;
+    matchCircleL.style.transform = `${translate.Y}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     toggleClass(startEl, 'blob-animation');
@@ -230,7 +214,7 @@ Aubio().then(({ Pitch }) => {
             pluckAString.style.display = 'inline';
             noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
-            matchCircleL.style.transform = `${translate[dir]}(150%)`;
+            matchCircleL.style.transform = `${translate.Y}(125%)`;
             tuneUpText.classList.remove('show');
             tuneDownText.classList.remove('show');
           }
@@ -247,7 +231,6 @@ Aubio().then(({ Pitch }) => {
             const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
             const isClose = noteName === guitarNoteName && note.cents < 5;
             updateTuneText(isTooLow, isClose);
-            updateNeedles(isTooLow, isClose);
 
             // console.log(note);
 
@@ -289,7 +272,7 @@ Aubio().then(({ Pitch }) => {
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
-            matchCircleL.style.transform = `${translate[dir]}(${centsUI * (1 - tuneRatio) * (dir === 'Y' ? -1 : 1)}%)`;
+            matchCircleL.style.transform = `${translate.Y}(${-centsUI * (1 - tuneRatio)}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
               setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
