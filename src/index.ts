@@ -110,7 +110,7 @@ Aubio().then(({ Pitch }) => {
     return alert('Expected HTML element missing');
   }
 
-  const updateTuneText = throttle(500, (isTooLow: boolean, isClose: boolean) => {
+  const updateTuneText = throttle(500, (isClose: boolean, isTooLow: boolean) => {
     if (isClose) {
       tuneUpText.classList.remove('show');
       tuneDownText.classList.remove('show');
@@ -138,6 +138,7 @@ Aubio().then(({ Pitch }) => {
     matchCircleL.style.transform = `${translate.Y}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
+    updateTuneText(true);
     toggleClass(startEl, 'blob-animation');
   };
 
@@ -215,8 +216,7 @@ Aubio().then(({ Pitch }) => {
             noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
             matchCircleL.style.transform = `${translate.Y}(125%)`;
-            tuneUpText.classList.remove('show');
-            tuneDownText.classList.remove('show');
+            updateTuneText(true);
           }
         }
         else if (note.name && !Number.isNaN(note.cents)) {
@@ -227,11 +227,6 @@ Aubio().then(({ Pitch }) => {
             const noteName = `${note.name}_${note.octave}`;
             const guitarNoteName = getClosestGuitarNote(frequency);
 
-            // Show tune up/down text iff frequency is way off (more than 25 cents)
-            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
-            const isClose = noteName === guitarNoteName && note.cents < 5;
-            updateTuneText(isTooLow, isClose);
-
             // console.log(note);
 
             // if (prevNote == note.name)
@@ -240,6 +235,8 @@ Aubio().then(({ Pitch }) => {
             // const transformTime = (degDiff + 25) * 15;
             // console.log(noteName, note.cents)
 
+            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
+
             const baseCents = noteName === guitarNoteName
               ? note.cents
               : isTooLow ? -85 : 85;
@@ -247,6 +244,9 @@ Aubio().then(({ Pitch }) => {
             const absCents100 = Math.abs(baseCents) * 2;
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
             const centsUI = round(baseCents, sensitivity);
+
+            const isClose = noteName === guitarNoteName && centsUI === 0;
+            updateTuneText(isClose, isTooLow);
 
             // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
             // const centsApprox = note.cents;
