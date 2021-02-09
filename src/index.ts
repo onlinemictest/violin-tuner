@@ -239,7 +239,7 @@ Aubio().then(({ Pitch }) => {
 
             const baseCents = noteName === guitarNoteName
               ? note.cents
-              : isTooLow ? -85 : 85;
+              : isTooLow ? -50 : 50;
 
             const absCents100 = Math.abs(baseCents) * 2;
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
@@ -272,7 +272,7 @@ Aubio().then(({ Pitch }) => {
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
-            matchCircleL.style.transform = `${translate.Y}(${-centsUI * (1 - tuneRatio)}%)`;
+            matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
               setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
