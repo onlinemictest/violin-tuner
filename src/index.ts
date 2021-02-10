@@ -29,7 +29,6 @@ console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tu
 const BUFFER_SIZE = 2 ** 13;
 
 // Note buffer sizes
-const PREV_BUFFER_SIZE = Math.ceil(3 / 2);
 const NOTE_BUFFER_SIZE = Math.ceil(27 / 2);
 const TUNE_BUFFER_SIZE = Math.ceil(9 / 2);
 
