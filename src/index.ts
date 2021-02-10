@@ -20,7 +20,7 @@ import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
-import { closest, queue } from "./array-fns";
+import { closest, closestBy, flat, queue, range } from "./array-fns";
 import { isTruthy, set, throttle, throwError } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
@@ -33,6 +33,13 @@ const PREV_BUFFER_SIZE = Math.ceil(3 / 2);
 const NOTE_BUFFER_SIZE = Math.ceil(27 / 2);
 const TUNE_BUFFER_SIZE = Math.ceil(9 / 2);
 
+type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+type Octave = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+
+const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
+const OCTAVES: Octave[] = [1, 2, 3, 4, 5, 6, 7, 8];
+const NOTES = flat(OCTAVES.map(o => NOTE_STRINGS.map(n => `${n}_${o}`)));
+
 const GUITAR_FREQ = {
   'E_4': 329.63,
   'B_3': 246.94,
@@ -43,17 +50,19 @@ const GUITAR_FREQ = {
 };
 type GuitarNoteName = keyof typeof GUITAR_FREQ;
 const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
-const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
-const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
+// const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
+// const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
 const ANIM_DURATION = 350;
 
 const translate = {
   X: 'translateX',
   Y: 'translateY',
-}
+};
 
-const getClosestGuitarNote = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
+// const getClosestGuitarNoteByFreq = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
+const getClosestGuitarNote = (n: `${NoteString}_${Octave}`) => 
+  closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNoteName;
 
 initGetUserMedia();
 
@@ -203,6 +212,8 @@ Aubio().then(({ Pitch }) => {
 
         // If there has been nothing but noise for the last couple of seconds, show the message again:
         const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
+        const groupedByNote = [...groupedUntilChanged(noteBuffer)][0];
+        const isSilent = groupedByNote[0] === undefined && groupedByNote.length > 2; // reset fill-up animation after two consecutive undefined values
         if (isNoise) {
           if (resetable) {
             resetable = false;
@@ -219,10 +230,11 @@ Aubio().then(({ Pitch }) => {
             resetable = true;
             softResettable = true;
 
-            const noteName = `${note.name}_${note.octave}`;
-            const guitarNoteName = getClosestGuitarNote(frequency);
+            const noteName = `${note.name}_${note.octave as Octave}`;
+            // const guitarNoteName = getClosestGuitarNoteByFreq(note.frequency);
+            const guitarNoteName = getClosestGuitarNote(noteName);
 
-            // console.log(note);
+            // console.log(note.frequency, noteName, guitarNoteName);
 
             // if (prevNote == note.name)
             // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
@@ -230,7 +242,9 @@ Aubio().then(({ Pitch }) => {
             // const transformTime = (degDiff + 25) * 15;
             // console.log(noteName, note.cents)
 
-            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
+            const foobar = GUITAR_FREQ[guitarNoteName];
+            
+            const isTooLow = frequency < foobar;
 
             const baseCents = noteName === guitarNoteName
               ? note.cents
@@ -284,7 +298,7 @@ Aubio().then(({ Pitch }) => {
 
           // queue(prevNotes, note.name);
         }
-        else if (softResettable) {
+        else if (softResettable && isSilent) {
           // console.log('soft reset');
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
