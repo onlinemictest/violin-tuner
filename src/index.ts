@@ -30,8 +30,8 @@ const BUFFER_SIZE = 2 ** 13;
 
 // Note buffer sizes
 const PREV_BUFFER_SIZE = Math.ceil(3 / 2);
-const NOOP_BUFFER_SIZE = 36 / 2;
-const TUNE_BUFFER_SIZE = 12 / 2;
+const NOTE_BUFFER_SIZE = Math.ceil(27 / 2);
+const TUNE_BUFFER_SIZE = Math.ceil(9 / 2);
 
 const GUITAR_FREQ = {
   'E_4': 329.63,
@@ -183,13 +183,9 @@ Aubio().then(({ Pitch }) => {
       let softResettable = false;
       let jinglePlayed = false;
 
-      /** The last 3 notes excluding undefined */
-      const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
+      // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
+      const noteBuffer: (string | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      /** The last 36 notes (prox. 2 seconds). Used to fully reset the UI when there's only noise. */
-      const noopBuffer: string[] = new Array(NOOP_BUFFER_SIZE).fill(undefined);
-
-      /** A buffer of the last 36 cents values for each guitar note. Used to determine if a string is tuned. */
       let centsBufferMap: Map<string, number[]> = new Map(GUITAR_NOTES.map(nn => [nn, []]));
 
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
@@ -204,10 +200,10 @@ Aubio().then(({ Pitch }) => {
         const frequency = pitchDetector.do(buffer);
         const note = getNote(frequency);
 
-        queue(noopBuffer, note.name);
+        queue(noteBuffer, note.name);
 
         // If there has been nothing but noise for the last couple of seconds, show the message again:
-        const isNoise = [...groupedUntilChanged(noopBuffer.filter(isTruthy))].every(g => g.length <= 3);
+        const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
         if (isNoise) {
           if (resetable) {
             resetable = false;
@@ -287,7 +283,7 @@ Aubio().then(({ Pitch }) => {
             // prevNote = noteName;
           }
 
-          queue(prevNotes, note.name);
+          // queue(prevNotes, note.name);
         }
         else if (softResettable) {
           // console.log('soft reset');
