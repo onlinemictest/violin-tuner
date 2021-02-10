@@ -8,23 +8,20 @@ export function* groupedUntilChanged<X>(xs: Iterable<X>, equals: (a: X, b: X) =>
   const { done, value: initial } = it.next();
   if (done) return;
 
-  let group: X[] = [];
-
-  group.push(initial);
+  let group: X[] = [initial];
   let prev = initial;
 
   for (const x of cont(it)) {
     if (equals(x, prev)) {
       group.push(x);
-      prev = x;
     } else {
-      yield [...group];
+      yield group;
       group = [x];
-      prev = x;
     }
+    prev = x;
   }
 
-  if (group.length) yield group
+  yield group
 }
 
 export function first<X>(xs: Iterable<X>) {

@@ -4,7 +4,7 @@ export const isFalsey = (x: any) => !x;
 export const throwError = (m?: string) => { throw Error(m) };
 
 export const debounce = (delay: number, fn: (...args: any[]) => any) => {
-  let timer: any;
+  let timer: number;
   return (...args: any[]) => {
     clearTimeout(timer);
     timer = setTimeout(() => fn(...args), delay);
