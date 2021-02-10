@@ -79,7 +79,7 @@ Aubio().then(({ Pitch }) => {
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
   const errorEl = document.getElementById('circle-text-error') as HTMLSpanElement | null;
-  const noteSpan = document.getElementById('circle-text-note') as HTMLSpanElement | null;
+  const noteSpan = document.getElementById('circle-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
   const matchCircleR = document.getElementById('match-circle-r') as HTMLDivElement | null;
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
@@ -110,7 +110,7 @@ Aubio().then(({ Pitch }) => {
     return alert('Expected HTML element missing');
   }
 
-  const updateTuneText = throttle(500, (isTooLow: boolean, isClose: boolean) => {
+  const updateTuneText = throttle(500, (isClose: boolean, isTooLow: boolean) => {
     if (isClose) {
       tuneUpText.classList.remove('show');
       tuneDownText.classList.remove('show');
@@ -138,6 +138,7 @@ Aubio().then(({ Pitch }) => {
     matchCircleL.style.transform = `${translate.Y}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
+    updateTuneText(true);
     toggleClass(startEl, 'blob-animation');
   };
 
@@ -164,7 +165,7 @@ Aubio().then(({ Pitch }) => {
 
     try {
       const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      console.log(stream);
+
       // stream = s;
       audioContext.createMediaStreamSource(stream).connect(analyser);
       analyser.connect(scriptProcessor);
@@ -215,8 +216,7 @@ Aubio().then(({ Pitch }) => {
             noteSpan.style.display = 'none';
             matchCircleR.style.color = '';
             matchCircleL.style.transform = `${translate.Y}(125%)`;
-            tuneUpText.classList.remove('show');
-            tuneDownText.classList.remove('show');
+            updateTuneText(true);
           }
         }
         else if (note.name && !Number.isNaN(note.cents)) {
@@ -227,11 +227,6 @@ Aubio().then(({ Pitch }) => {
             const noteName = `${note.name}_${note.octave}`;
             const guitarNoteName = getClosestGuitarNote(frequency);
 
-            // Show tune up/down text iff frequency is way off (more than 25 cents)
-            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
-            const isClose = noteName === guitarNoteName && note.cents < 5;
-            updateTuneText(isTooLow, isClose);
-
             // console.log(note);
 
             // if (prevNote == note.name)
@@ -240,13 +235,18 @@ Aubio().then(({ Pitch }) => {
             // const transformTime = (degDiff + 25) * 15;
             // console.log(noteName, note.cents)
 
+            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
+
             const baseCents = noteName === guitarNoteName
               ? note.cents
-              : isTooLow ? -85 : 85;
+              : isTooLow ? -50 : 50;
 
             const absCents100 = Math.abs(baseCents) * 2;
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
             const centsUI = round(baseCents, sensitivity);
+
+            const isClose = noteName === guitarNoteName && centsUI === 0;
+            updateTuneText(isClose, isTooLow);
 
             // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
             // const centsApprox = note.cents;
@@ -272,7 +272,7 @@ Aubio().then(({ Pitch }) => {
             matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
-            matchCircleL.style.transform = `${translate.Y}(${-centsUI * (1 - tuneRatio)}%)`;
+            matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
               setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
