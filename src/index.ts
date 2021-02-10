@@ -124,7 +124,7 @@ Aubio().then(({ Pitch }) => {
   let analyser: AnalyserNode;
   let scriptProcessor: ScriptProcessorNode;
   let pitchDetector: Aubio.Pitch;
-  // let stream: MediaStream;
+  let stream: MediaStream;
 
   matchCircleL.style.transform = `${translate.Y}(125%)`;
 
@@ -146,7 +146,7 @@ Aubio().then(({ Pitch }) => {
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
-    // stream.getTracks().forEach(track => track.stop());
+    stream.getTracks().forEach(track => track.stop());
     pauseCallback();
   });
 
@@ -164,9 +164,8 @@ Aubio().then(({ Pitch }) => {
     // pitchDetector.setSilence(-70);
 
     try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      stream = await navigator.mediaDevices.getUserMedia({ audio: true });
 
-      // stream = s;
       audioContext.createMediaStreamSource(stream).connect(analyser);
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
