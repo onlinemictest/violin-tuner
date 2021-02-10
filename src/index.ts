@@ -18,7 +18,7 @@
 
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
-import { getNote } from "./music-fns";
+import { getNote, NoteString, Octave } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
 import { closest, closestBy, flat, queue, range } from "./array-fns";
 import { isTruthy, set, throttle, throwError } from "./helper-fns";
@@ -26,14 +26,12 @@ import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
-const BUFFER_SIZE = 2 ** 13;
+const BUFFER_SIZE = 8192;
+const INTERVAL_TIME = 185; // ms
 
 // Note buffer sizes
-const NOTE_BUFFER_SIZE = Math.ceil(27 / 2);
-const TUNE_BUFFER_SIZE = Math.ceil(9 / 2);
-
-type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
-type Octave = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
+const NOTE_BUFFER_SIZE = 15; 
+const TUNE_BUFFER_SIZE = 4;
 
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const OCTAVES: Octave[] = [1, 2, 3, 4, 5, 6, 7, 8];
@@ -133,16 +131,17 @@ Aubio().then(({ Pitch }) => {
   let scriptProcessor: ScriptProcessorNode;
   let pitchDetector: Aubio.Pitch;
   let stream: MediaStream;
+  let intervalId: number;
 
   matchCircleL.style.transform = `${translate.Y}(125%)`;
 
   const pauseCallback = () => {
     startEl.style.display = 'block';
     pauseEl.style.display = 'none';
-    pressPlay.style.display = 'inline';
-    pluckAString.style.display = 'none';
-    noteSpan.style.display = 'none';
-    matchCircleR.style.color = '';
+    pressPlay.style.opacity = '1';
+    pluckAString.style.opacity = '0';
+    noteSpan.style.opacity = '0';
+    noteSpan.style.color = '';
     matchCircleL.style.transform = `${translate.Y}(125%)`;
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
@@ -151,6 +150,7 @@ Aubio().then(({ Pitch }) => {
   };
 
   pauseEl.addEventListener('click', () => {
+    clearInterval(intervalId);
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
@@ -163,7 +163,10 @@ Aubio().then(({ Pitch }) => {
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
     toggleClass(pauseEl, 'shrink-animation');
-    await new Promise(r => requestAnimationFrame(r));
+    await Promise.race([
+      new Promise(r => pauseEl.addEventListener('animationend', r, { once: true })), 
+      new Promise(r => setTimeout(r, 250)),
+    ]);
 
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
@@ -178,10 +181,9 @@ Aubio().then(({ Pitch }) => {
       analyser.connect(scriptProcessor);
       scriptProcessor.connect(audioContext.destination);
 
-      pressPlay.style.display = 'none';
-      errorEl.style.display = 'none';
-      pluckAString.style.display = 'inline';
-      matchCircleL.style.visibility = 'visible';
+      pressPlay.style.opacity = '0';
+      errorEl.style.opacity = '0';
+      pluckAString.style.opacity = '1';
 
       // let prevCents = -50;
       // let prevNote = '';
@@ -189,6 +191,7 @@ Aubio().then(({ Pitch }) => {
       let resetable = false;
       let softResettable = false;
       let jinglePlayed = false;
+      let lastNote: string | null = null;
 
       // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
       const noteBuffer: (string | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
@@ -198,13 +201,21 @@ Aubio().then(({ Pitch }) => {
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
+      let frequency: number;
+      // let volume: number;
+      // console.time('audioprocess');
       scriptProcessor.addEventListener('audioprocess', event => {
-        // console.timeEnd('foo');
-        // console.time('foo');
+        // console.timeEnd('audioprocess');
+        // console.time('audioprocess');
 
-        const buffer = event.inputBuffer.getChannelData(0)
-        // const volume = volumeAudioProcess(buffer);
-        const frequency = pitchDetector.do(buffer);
+        const buffer = event.inputBuffer.getChannelData(0);
+        // volume = volumeAudioProcess(buffer);
+        frequency = pitchDetector.do(buffer);
+      });
+
+      intervalId = setInterval(() => {
+        // console.timeEnd('interval');
+        // console.time('interval');
         const note = getNote(frequency);
 
         queue(noteBuffer, note.name);
@@ -212,14 +223,14 @@ Aubio().then(({ Pitch }) => {
         // If there has been nothing but noise for the last couple of seconds, show the message again:
         const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
         const groupedByNote = [...groupedUntilChanged(noteBuffer)][0];
-        const isSilent = groupedByNote[0] === undefined && groupedByNote.length > 2; // reset fill-up animation after two consecutive undefined values
+        const isSilent = groupedByNote[0] === undefined && groupedByNote.length >= 2; // reset fill-up animation after two consecutive undefined values
         if (isNoise) {
           if (resetable) {
             resetable = false;
-            pressPlay.style.display = 'none';
-            pluckAString.style.display = 'inline';
-            noteSpan.style.display = 'none';
-            matchCircleR.style.color = '';
+            pressPlay.style.opacity = '0';
+            pluckAString.style.opacity = '1';
+            noteSpan.style.opacity = '0';
+            noteSpan.style.color = '';
             matchCircleL.style.transform = `${translate.Y}(125%)`;
             updateTuneText(true);
           }
@@ -229,7 +240,7 @@ Aubio().then(({ Pitch }) => {
             resetable = true;
             softResettable = true;
 
-            const noteName = `${note.name}_${note.octave as Octave}`;
+            const noteName = `${note.name}_${note.octave}` as `${NoteString}_${Octave}` ;
             // const guitarNoteName = getClosestGuitarNoteByFreq(note.frequency);
             const guitarNoteName = getClosestGuitarNote(noteName);
 
@@ -264,20 +275,22 @@ Aubio().then(({ Pitch }) => {
             // console.log(transitionTime)
 
             // matchCircleR.style.transform = `translateY(${note.cents}%)`;
-            pluckAString.style.display = 'none';
-            noteSpan.style.display = 'inline';
-            noteSpan.innerText = guitarNoteName.split('_')[0];
+            pluckAString.style.opacity = '0';
+            noteSpan.style.opacity = '1';
+            const gnn = guitarNoteName.split('_')[0];
+            if (lastNote !== gnn) { noteSpan.innerText = gnn }
+            lastNote = gnn;
 
             const centsBuffer = centsBufferMap.get(noteName) ?? [];
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
-            const tuneRatio = clamp((centsBuffer.length - 1) / TUNE_BUFFER_SIZE);
+            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
             // console.log(noteName, tuneRatio)
             innerCircle.style.transition = `transform ${ANIM_DURATION}ms ease`
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
-            matchCircleR.style.transition = `color ${ANIM_DURATION}ms ease`
-            matchCircleR.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
+            noteSpan.style.transition = `color ${ANIM_DURATION}ms ease`
+            noteSpan.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
@@ -308,12 +321,13 @@ Aubio().then(({ Pitch }) => {
 
         // // console.log(pauseBuffer)
         // queue(pauseBuffer, note.name);
-      });
+      }, INTERVAL_TIME);
     } catch (err) {
+      clearInterval(intervalId);
       pauseCallback();
-      pressPlay.style.display = 'none';
+      pressPlay.style.opacity = '0';
       errorEl.innerText = err.message;
-      errorEl.style.display = 'block';
+      errorEl.style.opacity = '1';
     };
   });
 });

@@ -1,4 +1,5 @@
 export type NoteString = 'C' | 'C#' | 'D' | 'D#' | 'E' | 'F' | 'F#' | 'G' | 'G#' | 'A' | 'A#' | 'B';
+export type Octave = 1 | 2 | 3 | 4 | 5 | 6 | 7 | 8;
 
 export const middleA = 440;
 
@@ -10,7 +11,7 @@ export interface Note {
   index: number,
   name: NoteString
   cents: number
-  octave: number,
+  octave: Octave,
   frequency: number,
 }
 
@@ -22,7 +23,7 @@ export function getNote(frequency: number): Note {
     index: noteIndex,
     name: NOTE_STRINGS[noteIndex % 12],
     cents: getCents(frequency, noteIndex),
-    octave: Math.floor(noteIndex / 12) - 1,
+    octave: Math.floor(noteIndex / 12) - 1 as Octave,
     frequency: frequency,
   };
 }
