@@ -149,13 +149,18 @@ Aubio().then(({ Pitch }) => {
     toggleClass(startEl, 'blob-animation');
   };
 
-  pauseEl.addEventListener('click', () => {
+  pauseEl.addEventListener('click', async () => {
     clearInterval(intervalId);
+    pauseCallback();
+    await Promise.race([
+      new Promise(r => startEl.addEventListener('animationend', r, { once: true })), 
+      new Promise(r => setTimeout(r, 250)),
+    ]);
+
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
     audioContext.close();
     stream.getTracks().forEach(track => track.stop());
-    pauseCallback();
   });
 
   startEl.addEventListener('click', async () => {
@@ -201,7 +206,7 @@ Aubio().then(({ Pitch }) => {
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
-      let frequency: number;
+      const box: { frequency?: number } = {};
       // let volume: number;
       // console.time('audioprocess');
       scriptProcessor.addEventListener('audioprocess', event => {
@@ -210,10 +215,13 @@ Aubio().then(({ Pitch }) => {
 
         const buffer = event.inputBuffer.getChannelData(0);
         // volume = volumeAudioProcess(buffer);
-        frequency = pitchDetector.do(buffer);
+        box.frequency = pitchDetector.do(buffer);
       });
 
       intervalId = setInterval(() => {
+        const { frequency } = box;
+        if (!frequency) return;
+
         // console.timeEnd('interval');
         // console.time('interval');
         const note = getNote(frequency);
