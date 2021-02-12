@@ -310,13 +310,13 @@ Aubio().then(({ Pitch }) => {
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
             noteSpan.style.transition = `color ${ANIM_DURATION}ms ease`
-            noteSpan.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
+            noteSpan.style.color = tuneRatio === 1 ? '#fbfbfb' : '#fbfbfb88';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
+              setTimeout(() => (tunedJingle.play(), toggleClass(noteSpan, 'explode')), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayed = true;

@@ -120,7 +120,7 @@
 #circle-note {
   font-size: 10em;
   will-change: contents;
-  color: #fff8;
+  color: #fbfbfb88;
 }
 
 #circle-text-error {
@@ -327,6 +327,16 @@
     opacity: 0;
     box-shadow: 0 0 2px, inset 0 0 1px; 
   }
+}
+.explode {
+  animation-name: explode;
+  animation-duration: 350ms;
+  animation-timing-function: ease; 
+}
+@keyframes explode {
+  0% { transform: scale(1) rotate(0) }
+  10% { transform: scale(4) rotate(20deg) }
+  100% { transform: scale(1) rotate(0) }
 }
 @keyframes shrink-animation {
   0% { transform : translateY(-10vw) scale(3) }
