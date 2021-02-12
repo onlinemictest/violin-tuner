@@ -240,6 +240,9 @@ Aubio().then(({ Pitch }) => {
         // If there has been nothing but noise for the last couple of seconds, show the message again:
         const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
         const groupedByNote = [...groupedUntilChanged(noteBuffer)][0];
+
+        console.log([...groupedUntilChanged(noteBuffer)].map(ns => ns.map(n => n === undefined ? '-' : n.endsWith('#') ? n.charAt(0).toLocaleLowerCase() : n).join('')).join(''));
+
         const isSilent = groupedByNote[0] === undefined && groupedByNote.length >= 2; // reset fill-up animation after two consecutive undefined values
         if (isNoise) {
           if (resetable) {
