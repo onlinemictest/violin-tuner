@@ -177,7 +177,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
-    // pitchDetector.setSilence(-70);
+    pitchDetector.setSilence(-60);
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -206,9 +206,12 @@ Aubio().then(({ Pitch }) => {
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
-      const box: { frequency?: number } = {};
-      // let volume: number;
-      // console.time('audioprocess');
+      const initialFreq = await new Promise<number>(resolve => scriptProcessor.addEventListener('audioprocess', event => {
+        const buffer = event.inputBuffer.getChannelData(0);
+        resolve(pitchDetector.do(buffer));
+      }, { once: true }));
+
+      const box: { frequency: number } = { frequency: initialFreq };
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('audioprocess');
         // console.time('audioprocess');
@@ -219,11 +222,10 @@ Aubio().then(({ Pitch }) => {
       });
 
       intervalId = setInterval(() => {
-        const { frequency } = box;
-        if (!frequency) return;
-
         // console.timeEnd('interval');
         // console.time('interval');
+
+        const { frequency } = box;
         const note = getNote(frequency);
 
         queue(noteBuffer, note.name);
