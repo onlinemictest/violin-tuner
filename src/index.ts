@@ -50,7 +50,7 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
 // const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 // const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
-const ANIM_DURATION = 350;
+const ANIM_DURATION = 500;
 
 const translate = {
   X: 'translateX',
