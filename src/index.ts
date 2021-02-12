@@ -21,7 +21,7 @@ import { toggleClass } from "./dom-fns";
 import { getNote, NoteString, Octave } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
 import { closest, closestBy, flat, queue, range } from "./array-fns";
-import { isTruthy, set, throttle, throwError } from "./helper-fns";
+import { isTruthy, once, set, throttle, throwError, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
@@ -146,16 +146,16 @@ Aubio().then(({ Pitch }) => {
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     updateTuneText(true);
-    toggleClass(startEl, 'blob-animation');
+    if ('animate' in Element.prototype) 
+      startEl.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
+    else
+      toggleClass(startEl, 'blob-animation');
   };
 
   pauseEl.addEventListener('click', async () => {
     clearInterval(intervalId);
     pauseCallback();
-    await Promise.race([
-      new Promise(r => startEl.addEventListener('animationend', r, { once: true })), 
-      new Promise(r => setTimeout(r, 250)),
-    ]);
+    await Promise.race([once(startEl, 'animationend'), timeout(250)]);
 
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
@@ -167,11 +167,12 @@ Aubio().then(({ Pitch }) => {
     guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
-    toggleClass(pauseEl, 'shrink-animation');
-    await Promise.race([
-      new Promise(r => pauseEl.addEventListener('animationend', r, { once: true })), 
-      new Promise(r => setTimeout(r, 250)),
-    ]);
+    if ('animate' in Element.prototype)
+      pauseEl.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
+    else 
+      toggleClass(pauseEl, 'shrink-animation');
+
+    await Promise.race([once(pauseEl, 'animationend'), timeout(250)]);
 
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
@@ -206,10 +207,9 @@ Aubio().then(({ Pitch }) => {
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
-      const initialFreq = await new Promise<number>(resolve => scriptProcessor.addEventListener('audioprocess', event => {
-        const buffer = event.inputBuffer.getChannelData(0);
-        resolve(pitchDetector.do(buffer));
-      }, { once: true }));
+      const initialEvent = await once(scriptProcessor, 'audioprocess');
+      const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
+      const initialFreq = pitchDetector.do(initialBuffer);
 
       const box: { frequency: number } = { frequency: initialFreq };
       scriptProcessor.addEventListener('audioprocess', event => {
