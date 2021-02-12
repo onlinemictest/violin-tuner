@@ -209,7 +209,8 @@ Aubio().then(({ Pitch }) => {
       // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
       const noteBuffer: (string | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<string, number[]> = new Map(GUITAR_NOTES.map(nn => [nn, []]));
+      let centsBufferMap: Map<GuitarNoteName, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
+      let jinglePlayedMap: Map<GuitarNoteName, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
 
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
@@ -301,7 +302,8 @@ Aubio().then(({ Pitch }) => {
             if (lastNote !== gnn) { noteSpan.innerText = gnn }
             lastNote = gnn;
 
-            const centsBuffer = centsBufferMap.get(noteName) ?? [];
+            const centsBuffer = centsBufferMap.get(guitarNoteName) ?? [];
+            const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
             const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
@@ -319,7 +321,8 @@ Aubio().then(({ Pitch }) => {
               setTimeout(() => (tunedJingle.play(), toggleClass(noteSpan, 'explode')), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
-              jinglePlayed = true;
+              // jinglePlayed = true;
+              jinglePlayedMap.set(guitarNoteName, true)
             }
 
             // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
@@ -336,7 +339,8 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
           jinglePlayed = false;
-          centsBufferMap = new Map(GUITAR_NOTES.map(nn => [nn, []]));
+          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
+          centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
         }
 
         // // console.log(pauseBuffer)
