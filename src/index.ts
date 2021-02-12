@@ -21,7 +21,7 @@ import { toggleClass } from "./dom-fns";
 import { getNote, NoteString, Octave } from "./music-fns";
 import { groupedUntilChanged } from "./iter";
 import { closest, closestBy, flat, queue, range } from "./array-fns";
-import { isTruthy, set, throttle, throwError } from "./helper-fns";
+import { isTruthy, once, set, throttle, throwError, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
@@ -50,7 +50,7 @@ const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
 // const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 // const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
-const ANIM_DURATION = 350;
+const ANIM_DURATION = 500;
 
 const translate = {
   X: 'translateX',
@@ -91,7 +91,8 @@ Aubio().then(({ Pitch }) => {
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
-  tunedJingle.volume = 0.5;
+  tunedJingle.volume = 0.01;
+  const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
   const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
   const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
@@ -146,16 +147,16 @@ Aubio().then(({ Pitch }) => {
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     updateTuneText(true);
-    toggleClass(startEl, 'blob-animation');
+    if ('animate' in Element.prototype) 
+      startEl.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
+    else
+      toggleClass(startEl, 'blob-animation');
   };
 
   pauseEl.addEventListener('click', async () => {
     clearInterval(intervalId);
     pauseCallback();
-    await Promise.race([
-      new Promise(r => startEl.addEventListener('animationend', r, { once: true })), 
-      new Promise(r => setTimeout(r, 250)),
-    ]);
+    await Promise.race([once(startEl, 'animationend'), timeout(250)]);
 
     scriptProcessor.disconnect(audioContext.destination);
     analyser.disconnect(scriptProcessor);
@@ -164,14 +165,21 @@ Aubio().then(({ Pitch }) => {
   });
 
   startEl.addEventListener('click', async () => {
+    await tunedJingle.play();
+    await timeout(1000);
+    tunedJingle.volume = JINGLE_VOLUME;
+  }, { once: true });
+
+  startEl.addEventListener('click', async () => {
     guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
-    toggleClass(pauseEl, 'shrink-animation');
-    await Promise.race([
-      new Promise(r => pauseEl.addEventListener('animationend', r, { once: true })), 
-      new Promise(r => setTimeout(r, 250)),
-    ]);
+    if ('animate' in Element.prototype)
+      pauseEl.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
+    else 
+      toggleClass(pauseEl, 'shrink-animation');
+
+    await Promise.race([once(pauseEl, 'animationend'), timeout(250)]);
 
     audioContext = new AudioContext();
     analyser = audioContext.createAnalyser();
@@ -201,15 +209,15 @@ Aubio().then(({ Pitch }) => {
       // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
       const noteBuffer: (string | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<string, number[]> = new Map(GUITAR_NOTES.map(nn => [nn, []]));
+      let centsBufferMap: Map<GuitarNoteName, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
+      let jinglePlayedMap: Map<GuitarNoteName, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
 
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
 
-      const initialFreq = await new Promise<number>(resolve => scriptProcessor.addEventListener('audioprocess', event => {
-        const buffer = event.inputBuffer.getChannelData(0);
-        resolve(pitchDetector.do(buffer));
-      }, { once: true }));
+      const initialEvent = await once(scriptProcessor, 'audioprocess');
+      const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
+      const initialFreq = pitchDetector.do(initialBuffer);
 
       const box: { frequency: number } = { frequency: initialFreq };
       scriptProcessor.addEventListener('audioprocess', event => {
@@ -233,6 +241,9 @@ Aubio().then(({ Pitch }) => {
         // If there has been nothing but noise for the last couple of seconds, show the message again:
         const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
         const groupedByNote = [...groupedUntilChanged(noteBuffer)][0];
+
+        console.log([...groupedUntilChanged(noteBuffer)].map(ns => ns.map(n => n === undefined ? '-' : n.endsWith('#') ? n.charAt(0).toLocaleLowerCase() : n).join('')).join(''));
+
         const isSilent = groupedByNote[0] === undefined && groupedByNote.length >= 2; // reset fill-up animation after two consecutive undefined values
         if (isNoise) {
           if (resetable) {
@@ -291,7 +302,8 @@ Aubio().then(({ Pitch }) => {
             if (lastNote !== gnn) { noteSpan.innerText = gnn }
             lastNote = gnn;
 
-            const centsBuffer = centsBufferMap.get(noteName) ?? [];
+            const centsBuffer = centsBufferMap.get(guitarNoteName) ?? [];
+            const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
             if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
 
             const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
@@ -300,16 +312,17 @@ Aubio().then(({ Pitch }) => {
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
             noteSpan.style.transition = `color ${ANIM_DURATION}ms ease`
-            noteSpan.style.color = tuneRatio === 1 ? '#fff' : '#fff8';
+            noteSpan.style.color = tuneRatio === 1 ? '#fbfbfb' : '#fbfbfb88';
 
             matchCircleL.style.transition = `transform ${ANIM_DURATION}ms ease`;
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              setTimeout(() => tunedJingle.play(), ANIM_DURATION); // give animation time to finish
+              setTimeout(() => (tunedJingle.play(), toggleClass(noteSpan, 'explode')), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
-              jinglePlayed = true;
+              // jinglePlayed = true;
+              jinglePlayedMap.set(guitarNoteName, true)
             }
 
             // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
@@ -326,7 +339,8 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
           jinglePlayed = false;
-          centsBufferMap = new Map(GUITAR_NOTES.map(nn => [nn, []]));
+          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
+          centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
         }
 
         // // console.log(pauseBuffer)
