@@ -204,6 +204,11 @@
   transform: translateY(150%);
 }
 
+@media only screen and (max-width: 425px) {
+  #tune-up-text { top: 2.5vw }
+  #tune-down-text { bottom: 2.5vw }
+}
+
 .tune-text.show {
   transform: translateY(0)!important;
 }
