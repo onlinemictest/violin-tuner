@@ -91,7 +91,8 @@ Aubio().then(({ Pitch }) => {
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
-  tunedJingle.volume = 0.5;
+  tunedJingle.volume = 0.01;
+  const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
   const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
   const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
@@ -162,6 +163,12 @@ Aubio().then(({ Pitch }) => {
     audioContext.close();
     stream.getTracks().forEach(track => track.stop());
   });
+
+  startEl.addEventListener('click', async () => {
+    await tunedJingle.play();
+    await timeout(tunedJingle.duration * 1000);
+    tunedJingle.volume = JINGLE_VOLUME;
+  }, { once: true });
 
   startEl.addEventListener('click', async () => {
     guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
