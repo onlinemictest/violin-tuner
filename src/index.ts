@@ -91,7 +91,7 @@ Aubio().then(({ Pitch }) => {
   const innerCircle = document.getElementById('inner-circle') as HTMLDivElement | null;
 
   const tunedJingle = document.getElementById('tuned-jingle') as HTMLAudioElement;
-  tunedJingle.volume = 0.01;
+  tunedJingle.volume = 0.001;
   const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
   const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
@@ -166,7 +166,7 @@ Aubio().then(({ Pitch }) => {
 
   startEl.addEventListener('click', async () => {
     await tunedJingle.play();
-    await timeout(1000);
+    await timeout(1600);
     tunedJingle.volume = JINGLE_VOLUME;
   }, { once: true });
 
