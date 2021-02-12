@@ -166,7 +166,7 @@ Aubio().then(({ Pitch }) => {
 
   startEl.addEventListener('click', async () => {
     await tunedJingle.play();
-    await timeout(tunedJingle.duration * 1000);
+    await timeout(1000);
     tunedJingle.volume = JINGLE_VOLUME;
   }, { once: true });
 
