@@ -185,7 +185,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
-    pitchDetector.setSilence(-60);
+    pitchDetector.setSilence(-55);
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
