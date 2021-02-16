@@ -140,11 +140,8 @@
   margin-top: -67.5px;
   left: -67.5px;
 }
-#audio-start.note-shape::before { background: #e25c1b }
-#audio-start.note-shape > img { position: relative }
 
 #audio-pause {
-  background: #fbfbfb;
   width: 45px;
   height: 45px;
   display: none;
@@ -214,7 +211,7 @@
 }
 
 .audio-button {
-  background: transparent;
+  background: #fbfbfb;
   z-index: 10;
   position: absolute;
   margin: 0 auto;
