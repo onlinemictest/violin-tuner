@@ -332,7 +332,7 @@
 }
 @keyframes explode {
   0% { transform: scale(1) rotate(0) }
-  10% { transform: scale(4) rotate(20deg) }
+  10% { transform: scale(3) rotate(20deg) }
   100% { transform: scale(1) rotate(0) }
 }
 @keyframes shrink-animation {
