@@ -27,3 +27,10 @@ export function* groupedUntilChanged<X>(xs: Iterable<X>, equals: (a: X, b: X) =>
 export function first<X>(xs: Iterable<X>) {
   for (const x of xs) return x;
 }
+
+export function* takeWhile<X>(xs: Iterable<X>, f: (x: X) => boolean) {
+  for (const x of xs) {
+    if (f(x)) yield x;
+    else break;
+  }
+}
