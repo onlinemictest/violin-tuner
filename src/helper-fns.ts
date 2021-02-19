@@ -22,15 +22,15 @@ export const debounce = (delay: number, fn: (...args: any[]) => any) => {
 
 export const throttle = (limit: number, fn: (...args: any[]) => any) => {
   let wait = false;
-  const dyn: { last: any[] | null } = { last: null };
+  let last: any[];
   return (...args: any[]) => {
-    dyn.last = args;
+    last = args;
     if (!wait) {
       fn(...args);
       wait = true;
       setTimeout(() => { 
         wait = false;
-        fn(...<any[]>dyn.last);
+        fn(...last);
       }, limit);
     }
   }

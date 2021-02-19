@@ -19,7 +19,7 @@
 import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote, NoteString, Octave } from "./music-fns";
-import { groupedUntilChanged } from "./iter";
+import { groupedUntilChanged, takeWhile } from "./iter";
 import { closest, closestBy, flat, queue, range } from "./array-fns";
 import { isTruthy, once, set, throttle, throwError, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
@@ -31,11 +31,13 @@ const INTERVAL_TIME = 185; // ms
 
 // Note buffer sizes
 const NOTE_BUFFER_SIZE = 15; 
-const TUNE_BUFFER_SIZE = 4;
+const TUNE_BUFFER_SIZE = 5;
 
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
 const OCTAVES: Octave[] = [1, 2, 3, 4, 5, 6, 7, 8];
 const NOTES = flat(OCTAVES.map(o => NOTE_STRINGS.map(n => `${n}_${o}`)));
+
+type Note_Octave = `${NoteString}_${Octave}`;
 
 const GUITAR_FREQ = {
   'E_4': 329.63,
@@ -45,8 +47,10 @@ const GUITAR_FREQ = {
   'A_2': 110.00,
   'E_2': 82.41,
 };
-type GuitarNoteName = keyof typeof GUITAR_FREQ;
-const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNoteName[];
+
+type GuitarNote_Octave = keyof typeof GUITAR_FREQ;
+
+const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNote_Octave[];
 // const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
 // const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
@@ -58,10 +62,19 @@ const translate = {
 };
 
 // const getClosestGuitarNoteByFreq = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
-const getClosestGuitarNote = (n: `${NoteString}_${Octave}`) => 
-  closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNoteName;
+const getClosestGuitarNote = (n?: Note_Octave) => n 
+  ? closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave 
+  : undefined;
 
 initGetUserMedia();
+
+const nonSilentGroup = (g: (Note_Octave | undefined)[]): g is Note_Octave[] => 
+  g[0] !== undefined;
+
+const MAGIC_NUMBER = 3;
+const isNoisy = (currNote: GuitarNote_Octave | undefined) => 
+  (g: (Note_Octave | undefined)[]) => 
+    g[0] !== currNote || (g[0] === currNote && g.length <= MAGIC_NUMBER);
 
 if (false
   || !('WebAssembly' in window) 
@@ -185,7 +198,7 @@ Aubio().then(({ Pitch }) => {
     analyser = audioContext.createAnalyser();
     scriptProcessor = audioContext.createScriptProcessor(BUFFER_SIZE, 1, 1);
     pitchDetector = new Pitch('default', BUFFER_SIZE, 1, audioContext.sampleRate);
-    pitchDetector.setSilence(-60);
+    pitchDetector.setSilence(-55);
 
     try {
       stream = await navigator.mediaDevices.getUserMedia({ audio: true });
@@ -203,14 +216,15 @@ Aubio().then(({ Pitch }) => {
 
       let resetable = false;
       let softResettable = false;
-      let jinglePlayed = false;
-      let lastNote: string | null = null;
+      let prevNoteString: NoteString | undefined;
+      let currNote: GuitarNote_Octave | undefined;
+      let prevNote: GuitarNote_Octave | undefined;
 
       // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
-      const noteBuffer: (string | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
+      const noteBuffer: (Note_Octave | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
-      let centsBufferMap: Map<GuitarNoteName, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
-      let jinglePlayedMap: Map<GuitarNoteName, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
+      let centsBufferMap: Map<GuitarNote_Octave, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
+      let jinglePlayedMap: Map<GuitarNote_Octave, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
 
       // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
       // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
@@ -236,34 +250,41 @@ Aubio().then(({ Pitch }) => {
         const { frequency } = box;
         const note = getNote(frequency);
 
-        queue(noteBuffer, note.name);
+        const noteName = note.name ? `${note.name}_${note.octave}` as Note_Octave : undefined;
+        queue(noteBuffer, noteName);
+
+        const groupedByNote = [...groupedUntilChanged(noteBuffer)];
+        const groupedByNoteNonSilent = groupedByNote.filter(nonSilentGroup)
+
+        currNote = getClosestGuitarNote(groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
 
         // If there has been nothing but noise for the last couple of seconds, show the message again:
-        const isNoise = [...groupedUntilChanged(noteBuffer.filter(isTruthy))].every(g => g.length <= 3);
-        const groupedByNote = [...groupedUntilChanged(noteBuffer)][0];
+        const isLongNoise = groupedByNoteNonSilent.every(g => g.length <= MAGIC_NUMBER);
+        // If there are 3 or more groups in front of the current note, we consider that noise as well:
+        const isShortNoise = [...takeWhile(groupedByNoteNonSilent, isNoisy(currNote))].length >= 3;
 
-        console.log([...groupedUntilChanged(noteBuffer)].map(ns => ns.map(n => n === undefined ? '-' : n.endsWith('#') ? n.charAt(0).toLocaleLowerCase() : n).join('')).join(''));
+        // console.log(currNote)
 
-        const isSilent = groupedByNote[0] === undefined && groupedByNote.length >= 2; // reset fill-up animation after two consecutive undefined values
-        if (isNoise) {
-          if (resetable) {
-            resetable = false;
-            pressPlay.style.opacity = '0';
-            pluckAString.style.opacity = '1';
-            noteSpan.style.opacity = '0';
-            noteSpan.style.color = '';
-            matchCircleL.style.transform = `${translate.Y}(125%)`;
-            updateTuneText(true);
-          }
+        console.log(groupedByNote.map(g => g.map(n => n === undefined ? '-' : n.includes('#') ? n.charAt(0).toLocaleLowerCase() : n.charAt(0)).join('')).join(''));
+
+        if (isLongNoise && resetable) {
+          currNote = undefined;
+          resetable = false; // prevent repeated resets
+          pressPlay.style.opacity = '0';
+          pluckAString.style.opacity = '1';
+          noteSpan.style.opacity = '0';
+          noteSpan.style.color = '';
+          matchCircleL.style.transform = `${translate.Y}(125%)`;
+          updateTuneText(true);
         }
-        else if (note.name && !Number.isNaN(note.cents)) {
+        else if (currNote && !Number.isNaN(note.cents)) {
           if (tunedJingle.paused) {
             resetable = true;
             softResettable = true;
 
-            const noteName = `${note.name}_${note.octave}` as `${NoteString}_${Octave}` ;
             // const guitarNoteName = getClosestGuitarNoteByFreq(note.frequency);
-            const guitarNoteName = getClosestGuitarNote(noteName);
+            // const guitarNoteName = getClosestGuitarNote(noteName);
+            const guitarNoteName = currNote;
 
             // console.log(note.frequency, noteName, guitarNoteName);
 
@@ -273,9 +294,7 @@ Aubio().then(({ Pitch }) => {
             // const transformTime = (degDiff + 25) * 15;
             // console.log(noteName, note.cents)
 
-            const foobar = GUITAR_FREQ[guitarNoteName];
-            
-            const isTooLow = frequency < foobar;
+            const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
 
             const baseCents = noteName === guitarNoteName
               ? note.cents
@@ -283,7 +302,15 @@ Aubio().then(({ Pitch }) => {
 
             const absCents100 = Math.abs(baseCents) * 2;
             const sensitivity = Math.min(10, Math.round(100 / absCents100));
-            const centsUI = round(baseCents, sensitivity);
+            const centsRounded = round(baseCents, sensitivity);
+
+            const centsBuffer = centsBufferMap.get(guitarNoteName) ?? [];
+            const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
+            if (noteName === guitarNoteName && centsRounded === 0) centsBuffer.push(0);
+
+            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
+
+            const centsUI = centsRounded * (1 - tuneRatio);
 
             const isClose = noteName === guitarNoteName && centsUI === 0;
             updateTuneText(isClose, isTooLow);
@@ -298,15 +325,10 @@ Aubio().then(({ Pitch }) => {
             // matchCircleR.style.transform = `translateY(${note.cents}%)`;
             pluckAString.style.opacity = '0';
             noteSpan.style.opacity = '1';
-            const gnn = guitarNoteName.split('_')[0];
-            if (lastNote !== gnn) { noteSpan.innerText = gnn }
-            lastNote = gnn;
+            const currNoteString = guitarNoteName.split('_')[0] as NoteString;
+            if (prevNoteString !== currNoteString) noteSpan.innerText = currNoteString
+            prevNoteString = currNoteString;
 
-            const centsBuffer = centsBufferMap.get(guitarNoteName) ?? [];
-            const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
-            if (noteName === guitarNoteName && centsUI === 0) centsBuffer.push(0);
-
-            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
             // console.log(noteName, tuneRatio)
             innerCircle.style.transition = `transform ${ANIM_DURATION}ms ease`
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
@@ -321,7 +343,6 @@ Aubio().then(({ Pitch }) => {
               setTimeout(() => (tunedJingle.play(), toggleClass(noteSpan, 'explode')), ANIM_DURATION); // give animation time to finish
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
-              // jinglePlayed = true;
               jinglePlayedMap.set(guitarNoteName, true)
             }
 
@@ -333,18 +354,30 @@ Aubio().then(({ Pitch }) => {
 
           // queue(prevNotes, note.name);
         }
-        else if (softResettable && isSilent) {
-          // console.log('soft reset');
+
+        const isSilence = groupedByNote[0][0] === undefined && groupedByNote[0].length >= 2;
+        const isNoteChange = prevNote !== currNote;
+        prevNote = currNote;
+
+        if (softResettable && isNoteChange) {
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayed = false;
+          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => n === currNote 
+            ? [n, jinglePlayedMap.get(n) ?? false]
+            : [n, false]));
+          centsBufferMap = new Map(GUITAR_NOTES.map(n => n === currNote 
+            ? [n, centsBufferMap.get(n) ?? []]
+            : [n, []]));
+        }
+        else if (softResettable && (isSilence || isShortNoise)) {
+          currNote = undefined;
+          innerCircle.style.transition = 'transform 100ms'
+          innerCircle.style.transform = `scale(1)`;
+          softResettable = false;
           jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
           centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
         }
-
-        // // console.log(pauseBuffer)
-        // queue(pauseBuffer, note.name);
       }, INTERVAL_TIME);
     } catch (err) {
       clearInterval(intervalId);
