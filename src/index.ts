@@ -20,8 +20,8 @@ import { initGetUserMedia } from "./init-get-user-media";
 import { toggleClass } from "./dom-fns";
 import { getNote, NoteString, Octave } from "./music-fns";
 import { groupedUntilChanged, takeWhile } from "./iter";
-import { closest, closestBy, flat, queue, range } from "./array-fns";
-import { isTruthy, once, set, throttle, throwError, timeout } from "./helper-fns";
+import { closestBy, flat, queue } from "./array-fns";
+import { isTruthy, once, set, throttle, timeout } from "./helper-fns";
 import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
@@ -30,7 +30,7 @@ const BUFFER_SIZE = 8192;
 const INTERVAL_TIME = 185; // ms
 
 // Note buffer sizes
-const NOTE_BUFFER_SIZE = 15; 
+const NOTE_BUFFER_SIZE = 15;
 const TUNE_BUFFER_SIZE = 5;
 
 const NOTE_STRINGS: NoteString[] = ['C', 'C#', 'D', 'D#', 'E', 'F', 'F#', 'G', 'G#', 'A', 'A#', 'B'];
@@ -51,8 +51,6 @@ const GUITAR_FREQ = {
 type GuitarNote_Octave = keyof typeof GUITAR_FREQ;
 
 const GUITAR_NOTES = Object.keys(GUITAR_FREQ) as GuitarNote_Octave[];
-// const GUITAR_FREQ_INV = new Map(Object.entries(GUITAR_FREQ).map(([a, b]) => [b, a])) as Map<number, GuitarNoteName>
-// const GUITAR_FREQ_VAL = Object.values(GUITAR_FREQ).sort();
 
 const ANIM_DURATION = 500;
 
@@ -61,31 +59,34 @@ const translate = {
   Y: 'translateY',
 };
 
-// const getClosestGuitarNoteByFreq = (f: number) => GUITAR_FREQ_INV.get(closest(GUITAR_FREQ_VAL, f)) ?? throwError();
-const getClosestGuitarNote = (n?: Note_Octave) => n 
-  ? closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave 
+const getClosestGuitarNote = (n?: Note_Octave) => n
+  ? closestBy(GUITAR_NOTES, n, (a, b) => Math.abs(NOTES.indexOf(a) - NOTES.indexOf(b))) as GuitarNote_Octave
   : undefined;
 
 initGetUserMedia();
 
-const nonSilentGroup = (g: (Note_Octave | undefined)[]): g is Note_Octave[] => 
+const nonSilentGroup = (g: (Note_Octave | undefined)[]): g is Note_Octave[] =>
   g[0] !== undefined;
 
 const MAGIC_NUMBER = 3;
-const isNoisy = (currNote: GuitarNote_Octave | undefined) => 
-  (g: (Note_Octave | undefined)[]) => 
+const isNoisy = (currNote: GuitarNote_Octave | undefined) =>
+  (g: (Note_Octave | undefined)[]) =>
     g[0] !== currNote || (g[0] === currNote && g.length <= MAGIC_NUMBER);
 
 if (false
-  || !('WebAssembly' in window) 
-  || !('AudioContext' in window) 
-  || !('createAnalyser' in AudioContext.prototype) 
-  || !('createScriptProcessor' in AudioContext.prototype) 
+  || !('WebAssembly' in window)
+  || !('AudioContext' in window)
+  || !('createAnalyser' in AudioContext.prototype)
+  || !('createScriptProcessor' in AudioContext.prototype)
 ) {
-  if (!('WebAssembly' in window)) throw alert(`Browser not supported: 'WebAssembly' is not defined`);
-  if (!('AudioContext' in window)) throw alert(`Browser not supported: 'AudioContext' is not defined`)
-  if (!('createAnalyser' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createAnalyser' is not defined`)
-  if (!('createScriptProcessor' in AudioContext.prototype)) throw alert(`Browser not supported: 'AudioContext.prototype.createScriptProcessor' is not defined`)
+  if (!('WebAssembly' in window))
+    throw alert(`Browser not supported: 'WebAssembly' is not defined`);
+  if (!('AudioContext' in window))
+    throw alert(`Browser not supported: 'AudioContext' is not defined`);
+  if (!('createAnalyser' in AudioContext.prototype))
+    throw alert(`Browser not supported: 'AudioContext.prototype.createAnalyser' is not defined`);
+  if (!('createScriptProcessor' in AudioContext.prototype))
+    throw alert(`Browser not supported: 'AudioContext.prototype.createScriptProcessor' is not defined`);
 }
 
 // @ts-expect-error
@@ -107,8 +108,11 @@ Aubio().then(({ Pitch }) => {
   tunedJingle.volume = 0.001;
   const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
-  const noteEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
-  const fillEls = new Map(Object.entries(GUITAR_FREQ).map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
+  const noteEls = new Map(Object.entries(GUITAR_FREQ)
+    .map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
+
+  const fillEls = new Map(Object.entries(GUITAR_FREQ)
+    .map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
   if (false
     || !guitarTuner
@@ -160,8 +164,11 @@ Aubio().then(({ Pitch }) => {
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     updateTuneText(true);
-    if ('animate' in Element.prototype) 
-      startEl.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
+    if ('animate' in Element.prototype)
+      startEl.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], {
+        duration: 125,
+        easing: 'ease',
+      });
     else
       toggleClass(startEl, 'blob-animation');
   };
@@ -188,8 +195,11 @@ Aubio().then(({ Pitch }) => {
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
     if ('animate' in Element.prototype)
-      pauseEl.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], { duration: 125, easing: 'ease' });
-    else 
+      pauseEl.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], {
+        duration: 125,
+        easing: 'ease',
+      });
+    else
       toggleClass(pauseEl, 'shrink-animation');
 
     await Promise.race([once(pauseEl, 'animationend'), timeout(250)]);
@@ -211,43 +221,34 @@ Aubio().then(({ Pitch }) => {
       errorEl.style.opacity = '0';
       pluckAString.style.opacity = '1';
 
-      // let prevCents = -50;
-      // let prevNote = '';
-
       let resetable = false;
       let softResettable = false;
       let prevNoteString: NoteString | undefined;
       let currNote: GuitarNote_Octave | undefined;
       let prevNote: GuitarNote_Octave | undefined;
 
-      // const prevNotes: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
       const noteBuffer: (Note_Octave | undefined)[] = new Array(NOTE_BUFFER_SIZE).fill(undefined);
 
       let centsBufferMap: Map<GuitarNote_Octave, number[]> = new Map(GUITAR_NOTES.map(n => [n, []]));
       let jinglePlayedMap: Map<GuitarNote_Octave, boolean> = new Map(GUITAR_NOTES.map(n => [n, false]));
 
-      // /** The last 3 notes including undefined. Used to reset the cents buffer between plucks of the string */
-      // const pauseBuffer: string[] = new Array(PREV_BUFFER_SIZE).fill(undefined);
-
       const initialEvent = await once(scriptProcessor, 'audioprocess');
       const initialBuffer = initialEvent.inputBuffer.getChannelData(0);
-      const initialFreq = pitchDetector.do(initialBuffer);
 
-      const box: { frequency: number } = { frequency: initialFreq };
+      let frequency = pitchDetector.do(initialBuffer);
+
       scriptProcessor.addEventListener('audioprocess', event => {
         // console.timeEnd('audioprocess');
         // console.time('audioprocess');
 
         const buffer = event.inputBuffer.getChannelData(0);
-        // volume = volumeAudioProcess(buffer);
-        box.frequency = pitchDetector.do(buffer);
+        frequency = pitchDetector.do(buffer);
       });
 
       intervalId = setInterval(() => {
         // console.timeEnd('interval');
         // console.time('interval');
 
-        const { frequency } = box;
         const note = getNote(frequency);
 
         const noteName = note.name ? `${note.name}_${note.octave}` as Note_Octave : undefined;
@@ -258,12 +259,11 @@ Aubio().then(({ Pitch }) => {
 
         currNote = getClosestGuitarNote(groupedByNoteNonSilent.find(g => g.length > MAGIC_NUMBER)?.[0]);
 
-        // If there has been nothing but noise for the last couple of seconds, show the message again:
+        // If there has been nothing but noise for the last couple of seconds:
         const isLongNoise = groupedByNoteNonSilent.every(g => g.length <= MAGIC_NUMBER);
+
         // If there are 3 or more groups in front of the current note, we consider that noise as well:
         const isShortNoise = [...takeWhile(groupedByNoteNonSilent, isNoisy(currNote))].length >= 3;
-
-        // console.log(currNote)
 
         if (process.env.DEBUG) {
           console.log(groupedByNote.map(g => g.map(n => n === undefined
@@ -288,17 +288,7 @@ Aubio().then(({ Pitch }) => {
             resetable = true;
             softResettable = true;
 
-            // const guitarNoteName = getClosestGuitarNoteByFreq(note.frequency);
-            // const guitarNoteName = getClosestGuitarNote(noteName);
             const guitarNoteName = currNote;
-
-            // console.log(note.frequency, noteName, guitarNoteName);
-
-            // if (prevNote == note.name)
-            // const degDiff = Math.trunc(Math.abs(prevDeg - deg));
-            // prevDeg = deg;
-            // const transformTime = (degDiff + 25) * 15;
-            // console.log(noteName, note.cents)
 
             const isTooLow = frequency < GUITAR_FREQ[guitarNoteName];
 
@@ -314,28 +304,19 @@ Aubio().then(({ Pitch }) => {
             const jinglePlayed = jinglePlayedMap.get(guitarNoteName) ?? false;
             if (noteName === guitarNoteName && centsRounded === 0) centsBuffer.push(0);
 
-            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE); // skip 1 entry to allow animation to complete
+            const tuneRatio = clamp(centsBuffer.length / TUNE_BUFFER_SIZE);
 
             const centsUI = centsRounded * (1 - tuneRatio);
 
             const isClose = noteName === guitarNoteName && centsUI === 0;
             updateTuneText(isClose, isTooLow);
 
-            // console.log(`${absCents2}/100 => %${sensitivity} => ${Math.abs(centsApprox) * 2}/100`);
-            // const centsApprox = note.cents;
-            // console.log(centsApprox)
-
-            // const transitionTime = 200 + Math.abs(prevCents - centsApprox) * 10;
-            // console.log(transitionTime)
-
-            // matchCircleR.style.transform = `translateY(${note.cents}%)`;
             pluckAString.style.opacity = '0';
             noteSpan.style.opacity = '1';
             const currNoteString = guitarNoteName.split('_')[0] as NoteString;
             if (prevNoteString !== currNoteString) noteSpan.innerText = currNoteString
             prevNoteString = currNoteString;
 
-            // console.log(noteName, tuneRatio)
             innerCircle.style.transition = `transform ${ANIM_DURATION}ms ease`
             innerCircle.style.transform = `scale(${1 - tuneRatio})`;
 
@@ -346,19 +327,16 @@ Aubio().then(({ Pitch }) => {
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              setTimeout(() => (tunedJingle.play(), toggleClass(noteSpan, 'explode')), ANIM_DURATION); // give animation time to finish
+              // give animation time to finish
+              setTimeout(() => {
+                tunedJingle.play(); 
+                toggleClass(noteSpan, 'explode');
+              }, ANIM_DURATION);
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
               jinglePlayedMap.set(guitarNoteName, true)
             }
-
-            // console.log(`Streak: ${centsHits.length}/${centsBuffer.length}`)
-
-            // prevCents = centsUI;
-            // prevNote = noteName;
           }
-
-          // queue(prevNotes, note.name);
         }
 
         const isSilence = groupedByNote[0][0] === undefined && groupedByNote[0].length >= 2;
@@ -369,10 +347,10 @@ Aubio().then(({ Pitch }) => {
           innerCircle.style.transition = 'transform 100ms'
           innerCircle.style.transform = `scale(1)`;
           softResettable = false;
-          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => n === currNote 
+          jinglePlayedMap = new Map(GUITAR_NOTES.map(n => n === currNote
             ? [n, jinglePlayedMap.get(n) ?? false]
             : [n, false]));
-          centsBufferMap = new Map(GUITAR_NOTES.map(n => n === currNote 
+          centsBufferMap = new Map(GUITAR_NOTES.map(n => n === currNote
             ? [n, centsBufferMap.get(n) ?? []]
             : [n, []]));
         }
