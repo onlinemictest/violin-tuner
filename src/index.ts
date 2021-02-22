@@ -265,7 +265,13 @@ Aubio().then(({ Pitch }) => {
 
         // console.log(currNote)
 
-        console.log(groupedByNote.map(g => g.map(n => n === undefined ? '-' : n.includes('#') ? n.charAt(0).toLocaleLowerCase() : n.charAt(0)).join('')).join(''));
+        if (process.env.DEBUG) {
+          console.log(groupedByNote.map(g => g.map(n => n === undefined
+            ? '-'
+            : n.includes('#')
+              ? n.charAt(0).toLocaleLowerCase()
+              : n.charAt(0)).join('')).join(''));
+        }
 
         if (isLongNoise && resetable) {
           currNote = undefined;
