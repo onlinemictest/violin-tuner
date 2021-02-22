@@ -164,21 +164,6 @@
   }
 }
 
-#needle {
-  position: absolute;
-  top: 50%;
-  left: -1.5vw;
-  margin-top: -3vw;
-  border-top: 3vw solid transparent;
-  border-bottom: 3vw solid transparent;
-  border-left: 3vw solid rgb(67,111,142);
-}
-@media only screen and (max-width: 425px) {
-  #needle {
-    left: 0;
-  }
-}
-
 .tune-text {
   position: absolute;
   text-align: center;
@@ -243,7 +228,7 @@
 
 #tune-up-box {
   position: absolute;
-  border: .15vw solid rgb(67,111,142);
+  border: .2vw solid rgb(67,111,142);
   font-size: 1vw;
   background: #fbfbfb;
   border-radius: 25px;
@@ -255,14 +240,14 @@
 
 @media only screen and (max-width: 1024px) {
   #tune-up-box {
-    border: .2vw solid rgb(67,111,142);
+    border: .25 solid rgb(67,111,142);
     font-size: 1.5vw;
   }
 }
 
 @media only screen and (max-width: 425px) {
   #tune-up-box {
-    border: .4vw solid rgb(67,111,142);
+    border: .5vw solid rgb(67,111,142);
     font-size: 3vw;
   }
   .square-ratio {
