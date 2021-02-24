@@ -123,7 +123,6 @@
 }
 
 #circle-text-play { 
-  /* display: inline; */
   opacity: 1;
 }
 
@@ -260,6 +259,16 @@
   .square-ratio {
     margin-top: -15vw;
   }
+}
+
+#circle-text-complete {
+  color: #fbfbfb;
+}
+.all-tuned-up #match-circle-r.note-shape::before {
+  background: rgb(67,111,142);
+}
+.all-tuned-up #match-circle-l {
+  opacity: 0;
 }
 
 .tuners-privacy-box {

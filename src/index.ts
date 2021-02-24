@@ -26,8 +26,9 @@ import { clamp, round } from "./math-fns";
 
 console.log('Licensed under AGPL-3.0: https://github.com/onlinemictest/guitar-tuner')
 
-const BUFFER_SIZE = 8192;
+const BUFFER_SIZE = 8192; // byte
 const INTERVAL_TIME = 185; // ms
+const VICTORY_DURATION = 3500; // ms
 
 // Note buffer sizes
 const NOTE_BUFFER_SIZE = 15;
@@ -114,6 +115,7 @@ Aubio().then(({ Pitch }) => {
   const tuneDownText = document.getElementById('tune-down-text') as HTMLDivElement | null;
   const pressPlay = document.getElementById('circle-text-play') as HTMLSpanElement | null
   const pluckAString = document.getElementById('circle-text-pluck') as HTMLSpanElement | null;
+  const allTunedUp = document.getElementById('circle-text-complete') as HTMLSpanElement | null;
   const errorEl = document.getElementById('circle-text-error') as HTMLSpanElement | null;
   const noteSpan = document.getElementById('circle-note') as HTMLSpanElement | null;
   const matchCircleL = document.getElementById('match-circle-l') as HTMLDivElement | null;
@@ -138,6 +140,7 @@ Aubio().then(({ Pitch }) => {
     || !tuneDownText
     || !pressPlay
     || !pluckAString
+    || !allTunedUp
     || !errorEl
     || !noteSpan
     || !matchCircleL
@@ -227,6 +230,8 @@ Aubio().then(({ Pitch }) => {
 
       let resetable = false;
       let softResettable = false;
+      let victory = false;
+      let victoryPause = false;
       let prevNoteString: NoteString | undefined;
       let currNote: GuitarNote_Octave | undefined;
       let prevNote: GuitarNote_Octave | undefined;
@@ -252,6 +257,8 @@ Aubio().then(({ Pitch }) => {
       intervalId = setInterval(() => {
         // console.timeEnd('interval');
         // console.time('interval');
+
+        if (victoryPause) return;
 
         const note = getNote(frequency);
 
@@ -331,14 +338,37 @@ Aubio().then(({ Pitch }) => {
             matchCircleL.style.transform = `${translate.Y}(${-centsUI}%)`;
 
             if (tuneRatio === 1 && !jinglePlayed) {
-              // give animation time to finish
-              setTimeout(() => {
-                tunedJingle.play();
-                toggleClass(noteSpan, 'explode');
-              }, ANIM_DURATION);
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
               set(fillEls.get(guitarNoteName)?.style, 'display', 'block');
-              jinglePlayedMap.set(guitarNoteName, true)
+              jinglePlayedMap.set(guitarNoteName, true);
+
+              // give animation time to finish
+              timeout(ANIM_DURATION).then(() => {
+                tunedJingle.play();
+                toggleClass(noteSpan, 'explode');
+
+                if ([...fillEls.values()].every(el => el.style.display === 'block') && !victory) {
+                  victory = true;
+                  victoryPause = true;
+                  guitarTuner.classList.add('all-tuned-up');
+                  noteSpan.style.opacity = '0';
+                  allTunedUp.style.opacity = '1';
+                  toggleClass(allTunedUp, 'explode');
+
+                  // Do a reset
+                  currNote = undefined;
+                  jinglePlayedMap = new Map(GUITAR_NOTES.map(n => [n, false]));
+                  centsBufferMap = new Map(GUITAR_NOTES.map(n => [n, []]));
+                  matchCircleL.style.transform = `${translate.Y}(125%)`;
+                  updateTuneText(true);
+
+                  timeout(VICTORY_DURATION).then(() => {
+                    victoryPause = false;
+                    guitarTuner.classList.remove('all-tuned-up');
+                    allTunedUp.style.opacity = '0';
+                  });
+                }
+              });
             }
           }
         }
@@ -375,4 +405,5 @@ Aubio().then(({ Pitch }) => {
       errorEl.style.opacity = '1';
     };
   });
+
 });
