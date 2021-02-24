@@ -89,6 +89,22 @@ if (false
     throw alert(`Browser not supported: 'AudioContext.prototype.createScriptProcessor' is not defined`);
 }
 
+const blobAnimation: (startEl: HTMLElement) => void = 'animate' in Element.prototype
+  ? el =>
+    el.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], {
+      duration: 125,
+      easing: 'ease',
+    })
+  : el => toggleClass(el, 'blob-animation')
+
+const shrinkAnimation: (pauseEl: HTMLElement) => void = 'animate' in Element.prototype
+  ? el =>
+    el.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], {
+      duration: 125,
+      easing: 'ease',
+    })
+  : el => toggleClass(el, 'shrink-animation');
+
 // @ts-expect-error
 Aubio().then(({ Pitch }) => {
   const guitarTuner = document.getElementById('guitar-tuner') as HTMLDivElement | null;
@@ -164,13 +180,7 @@ Aubio().then(({ Pitch }) => {
     tuneUpText.classList.remove('show');
     tuneDownText.classList.remove('show');
     updateTuneText(true);
-    if ('animate' in Element.prototype)
-      startEl.animate([{ transform: 'translateY(10vw) scale(0.33)' }, { transform: 'translateY(0) scale(1)' }], {
-        duration: 125,
-        easing: 'ease',
-      });
-    else
-      toggleClass(startEl, 'blob-animation');
+    blobAnimation(startEl);
   };
 
   pauseEl.addEventListener('click', async () => {
@@ -194,13 +204,7 @@ Aubio().then(({ Pitch }) => {
     guitarTuner.scrollIntoView({ behavior: 'smooth', block: 'center' });
     startEl.style.display = 'none';
     pauseEl.style.display = 'block';
-    if ('animate' in Element.prototype)
-      pauseEl.animate([{ transform: 'translateY(-10vw) scale(3) ' }, { transform: 'translateY(0) scale(1)' }], {
-        duration: 125,
-        easing: 'ease',
-      });
-    else
-      toggleClass(pauseEl, 'shrink-animation');
+    shrinkAnimation(pauseEl);
 
     await Promise.race([once(pauseEl, 'animationend'), timeout(250)]);
 
@@ -329,7 +333,7 @@ Aubio().then(({ Pitch }) => {
             if (tuneRatio === 1 && !jinglePlayed) {
               // give animation time to finish
               setTimeout(() => {
-                tunedJingle.play(); 
+                tunedJingle.play();
                 toggleClass(noteSpan, 'explode');
               }, ANIM_DURATION);
               set(noteEls.get(guitarNoteName)?.querySelector('path')?.style, 'fill', 'rgb(67,111,142)');
