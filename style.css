@@ -33,12 +33,6 @@
   }
 }
 
-/* @media only screen and (min-aspect-ratio: 21/9) {
-  #guitar-tuner {
-    padding: 0 8.5vw;
-  }
-} */
-
 [id$="-fill"] { 
   display: none;
 }
@@ -226,28 +220,41 @@
   clear: both;
 }
 
-#tune-up-box {
-  position: absolute;
+.border-box {
   border: .2vw solid rgb(67,111,142);
-  font-size: 1vw;
-  background: #fbfbfb;
-  border-radius: 25px;
-  width: 100%;
-  height: 100%;
   overflow: hidden;
   contain: content;
+  border-radius: 25px;
+}
+
+@media only screen and (max-width: 1024px) {
+  .border-box {
+    border: .25 solid rgb(67,111,142);
+  }
+}
+
+@media only screen and (max-width: 425px) {
+  .border-box {
+    border: .5vw solid rgb(67,111,142);
+  }
+}
+
+#tune-up-box {
+  position: absolute;
+  font-size: 1vw;
+  background: #fbfbfb;
+  width: 100%;
+  height: 100%;
 }
 
 @media only screen and (max-width: 1024px) {
   #tune-up-box {
-    border: .25 solid rgb(67,111,142);
     font-size: 1.5vw;
   }
 }
 
 @media only screen and (max-width: 425px) {
   #tune-up-box {
-    border: .5vw solid rgb(67,111,142);
     font-size: 3vw;
   }
   .square-ratio {
