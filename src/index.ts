@@ -124,11 +124,11 @@ Aubio().then(({ Pitch }) => {
   tunedJingle.volume = 0.001;
   const JINGLE_VOLUME = 0.5; // set after initial play to get around Safari limitation
 
-  const noteEls = new Map(Object.entries(VIOLIN_FREQ)
-    .map(([n]) => [n, document.getElementById(n) as unknown as SVGGElement]));
+  const noteEls = new Map(Object.keys(VIOLIN_FREQ)
+    .map(n => [n, document.getElementById(n) as unknown as SVGGElement]));
 
-  const fillEls = new Map(Object.entries(VIOLIN_FREQ)
-    .map(([n]) => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
+  const fillEls = new Map(Object.keys(VIOLIN_FREQ)
+    .map(n => [n, document.getElementById(`${n}-fill`) as unknown as SVGGElement]));
 
   if (false
     || !violinTuner
