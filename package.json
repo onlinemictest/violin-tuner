@@ -1,6 +1,6 @@
 {
   "private": true,
-  "name": "@onlinemictest/guitar",
+  "name": "@onlinemictest/violin",
   "version": "1.0.0",
   "main": "app.js",
   "type": "module",
@@ -27,12 +27,12 @@
   },
   "repository": {
     "type": "git",
-    "url": "git+https://github.com/onlinemictest/guitar-tuner.git"
+    "url": "git+https://github.com/onlinemictest/violin-tuner.git"
   },
   "license": "AGPL-3.0-or-later",
   "bugs": {
-    "url": "https://github.com/onlinemictest/guitar-tuner/issues"
+    "url": "https://github.com/onlinemictest/violin-tuner/issues"
   },
-  "homepage": "https://onlinemictest.com/guitar-tuner",
+  "homepage": "https://onlinemictest.com/violin-tuner",
   "description": ""
 }
